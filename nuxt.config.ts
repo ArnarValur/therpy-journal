@@ -2,11 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
-  modules: [
-    '@pinia/nuxt',
-    'reka-ui/nuxt',
-    '@nuxtjs/tailwindcss',
-  ],
+  modules: ['@pinia/nuxt', 'reka-ui/nuxt', '@nuxtjs/tailwindcss', '@nuxt/eslint'],
   css: [
     'remixicon/fonts/remixicon.css'
   ],
@@ -31,5 +27,9 @@ export default defineNuxtConfig({
       firebaseAppId: '1:642768975271:web:f9ad37c4a4a45e0318f282',
       firebaseMeasurementId: 'G-K10N6BT22V'
     }
+  },
+  typescript: {
+    strict: true,
+    typeCheck: true
   }
 })
