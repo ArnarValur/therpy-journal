@@ -11,14 +11,22 @@
   },
   "dependencies": {
     "@nuxt/devtools": "^2.4.0",
-    "@nuxtjs/eslint-module": "^4.1.0",
     "@nuxtjs/tailwindcss": "^6.13.2",
     "@pinia/nuxt": "^0.11.0",
     "firebase": "^11.6.0",
     "nuxt": "^3.16.2",
     "pinia": "^3.0.2",
     "reka-ui": "^2.2.0",
+    "remixicon": "^4.6.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.30.1",
+    "@typescript-eslint/parser": "^8.30.1",
+    "eslint": "^9.24.0",
+    "eslint-plugin-nuxt": "^4.0.0",
+    "eslint-plugin-vue": "^10.0.0",
+    "vue-eslint-parser": "^10.1.3"
   }
 }
