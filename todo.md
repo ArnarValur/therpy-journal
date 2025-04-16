@@ -63,15 +63,15 @@
 
 ## 4. User Settings
 - [ ] Build settings page UI
-  - [ ] Create form for updating user profile
-  - [ ] Implement name change functionality
-  - [ ] Add email change with verification
-  - [ ] Add password change option
-- [ ] Implement theme system
-  - [ ] Create light/dark theme toggle
-  - [ ] Set up theme persistence using localStorage
-  - [ ] Build CSS variables for theming
-  - [ ] Ensure all components respect theme settings
+  - [x] Create form for updating user profile
+  - [x] Implement name change functionality
+  - [x] Add email change with verification
+  - [x] Add password change option
+- [x] Implement theme system
+  - [x] Create light/dark theme toggle
+  - [x] Set up theme persistence using localStorage
+  - [x] Build CSS variables for theming
+  - [x] Ensure all components respect theme settings
 - [ ] Add account management options
   - [ ] Create account deletion functionality
   - [ ] Add data export option

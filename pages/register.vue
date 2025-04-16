@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
+import { useErrorHandler } from '~/composables/useErrorHandler';
+import { useLoadingState } from '~/composables/useLoadingState';
 
 // Define page metadata with auth layout
 definePageMeta({
@@ -10,45 +12,60 @@ definePageMeta({
 
 const router = useRouter();
 const authStore = useAuthStore();
+const { logError } = useErrorHandler();
+const { startLoading, endLoading } = useLoadingState();
 
 const name = ref('');
 const email = ref('');
 const password = ref('');
 const confirmPassword = ref('');
 const showPassword = ref(false);
-const errorMessage = ref('');
 
 const onRegister = async () => {
   // Basic validation
   if (!name.value || !email.value || !password.value) {
-    errorMessage.value = 'Please fill in all fields';
+    logError('Please fill in all fields', 'validation');
     return;
   }
   
   if (password.value !== confirmPassword.value) {
-    errorMessage.value = 'Passwords do not match';
+    logError('Passwords do not match', 'validation');
     return;
   }
   
   if (password.value.length < 6) {
-    errorMessage.value = 'Password must be at least 6 characters';
+    logError('Password must be at least 6 characters', 'validation');
     return;
   }
 
   try {
+    startLoading('register', 'Creating your account...');
     await authStore.register(name.value, email.value, password.value);
     await router.push('/');
-  } catch {
-    errorMessage.value = authStore.error || 'Registration failed';
+  } catch (error) {
+    logError(error, 'auth');
+  } finally {
+    endLoading('register');
   }
 };
 
 const onGoogleRegister = async () => {
   try {
+    startLoading('google-register', 'Signing up with Google...');
     await authStore.loginWithGoogle();
     await router.push('/');
-  } catch {
-    errorMessage.value = authStore.error || 'Google registration failed';
+  } catch (error) {
+    // Only show error if it's not a user cancellation
+    if (error && typeof error === 'object' && 'code' in error) {
+      const code = String(error.code || '');
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+        logError(error, 'auth');
+      }
+    } else {
+      logError(error, 'auth');
+    }
+  } finally {
+    endLoading('google-register');
   }
 };
 </script>
@@ -56,46 +73,42 @@ const onGoogleRegister = async () => {
 <template>
   <div class="space-y-6">
     <div class="text-center">
-      <h2 class="text-2xl font-semibold mb-2">Create Account</h2>
-      <p class="text-gray-600">Start your therapeutic journey</p>
-    </div>
-
-    <div v-if="errorMessage" class="bg-red-50 text-red-600 p-3 rounded text-sm">
-      {{ errorMessage }}
+      <h2 class="text-2xl font-semibold mb-2 dark:text-white">Create Account</h2>
+      <p class="text-gray-600 dark:text-gray-300">Start your therapeutic journey</p>
     </div>
 
     <form class="space-y-4" @submit.prevent="onRegister">
       <div class="space-y-4">
         <div>
-          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
           <input 
             id="name" 
             v-model="name"
             type="text" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
             placeholder="Your name"
             required>
         </div>
         
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
           <input 
             id="email" 
             v-model="email"
             type="email" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
             placeholder="your@email.com"
             required>
         </div>
         
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
           <div class="relative">
             <input 
               id="password" 
               v-model="password"
               :type="showPassword ? 'text' : 'password'" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10 dark:bg-gray-800 dark:text-white"
               placeholder="Your password"
               required>
             <button 
@@ -103,18 +116,18 @@ const onGoogleRegister = async () => {
               class="absolute inset-y-0 right-0 pr-3 flex items-center"
               @click="showPassword = !showPassword"
             >
-              <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'" class="text-gray-500" />
+              <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'" class="text-gray-500 dark:text-gray-400" />
             </button>
           </div>
         </div>
         
         <div>
-          <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+          <label for="confirmPassword" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
           <input 
             id="confirmPassword" 
             v-model="confirmPassword"
             :type="showPassword ? 'text' : 'password'" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
             placeholder="Confirm your password"
             required>
         </div>
@@ -134,16 +147,16 @@ const onGoogleRegister = async () => {
     
     <div class="relative">
       <div class="absolute inset-0 flex items-center">
-        <div class="w-full border-t border-gray-300" />
+        <div class="w-full border-t border-gray-300 dark:border-gray-600" />
       </div>
       <div class="relative flex justify-center text-sm">
-        <span class="px-2 bg-white text-gray-500">Or continue with</span>
+        <span class="border border-gray-300 dark:border-gray-600 px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with</span>
       </div>
     </div>
     
     <button
       type="button"
-      class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+      class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
       :disabled="authStore.isLoading"
       @click="onGoogleRegister"
     >
@@ -161,11 +174,17 @@ const onGoogleRegister = async () => {
       </span>
     </button>
     
-    <div class="text-center text-sm">
+    <div class="text-center text-sm text-gray-600 dark:text-gray-300">
       Already have an account?
-      <NuxtLink to="/login" class="text-blue-500 hover:underline">
+      <NuxtLink to="/login" class="text-blue-500 dark:text-blue-400 hover:underline">
         Login
       </NuxtLink>
     </div>
   </div>
-</template> 
+</template>
+
+<style scoped>
+.dark-mode .auth-span {
+  background-color: var(--color-background-primary);
+}
+</style> 

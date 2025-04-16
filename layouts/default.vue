@@ -5,6 +5,7 @@ import { useLogout } from '~/composables/useLogout';
 const isSidebarOpen = ref(true);
 const { logout, isLoggingOut } = useLogout();
 const showLogoutConfirm = ref(false);
+const showSettingsModal = ref(false);
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
@@ -24,42 +25,50 @@ const onLogout = async () => {
   showLogoutConfirm.value = false;
   await logout();
 };
+
+const openSettingsModal = () => {
+  showSettingsModal.value = true;
+};
+
+const closeSettingsModal = () => {
+  showSettingsModal.value = false;
+};
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex">
+  <div class="min-h-screen app-bg flex">
     <!-- Sidebar -->
     <aside
       :class="[
-        'bg-white shadow-md transition-all duration-300 z-20 h-screen sticky top-0 flex flex-col',
+        'sidebar transition-all duration-300 z-20 h-screen sticky top-0 flex flex-col',
         isSidebarOpen ? 'w-64' : 'w-16'
       ]"
     >
-      <div class="flex items-center justify-between p-4 border-b">
+      <div class="flex items-center justify-between p-4 sidebar-header">
         <h1 
           :class="[
-            'font-bold text-[#42A5F5] transition-opacity duration-300',
+            'font-bold primary-text transition-opacity duration-300',
             isSidebarOpen ? 'opacity-100' : 'opacity-0 hidden'
           ]"
         >
           TherapyJournal
         </h1>
-        <RButton
+        <button
           variant="ghost"
           size="sm"
           :aria-label="isSidebarOpen ? 'Close sidebar' : 'Open sidebar'"
           @click="toggleSidebar"
         >
-          <i :class="['ri-menu-fold-line', isSidebarOpen ? 'ri-menu-fold-line' : 'ri-menu-unfold-line']" />
-        </RButton>
+          <i :class="['text-icon', isSidebarOpen ? 'ri-menu-fold-line' : 'ri-menu-unfold-line']" />
+        </button>
       </div>
       <nav class="py-4 flex-grow">
         <ul class="space-y-2">
           <li>
             <NuxtLink 
               to="/" 
-              class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#42A5F5]"
-              active-class="bg-gray-100 text-[#42A5F5]"
+              class="nav-link flex items-center px-4 py-2"
+              active-class="nav-link-active"
             >
               <i class="ri-dashboard-line mr-3 text-lg" />
               <span :class="{ 'hidden': !isSidebarOpen }">Dashboard</span>
@@ -68,8 +77,8 @@ const onLogout = async () => {
           <li>
             <NuxtLink 
               to="/journal" 
-              class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#42A5F5]"
-              active-class="bg-gray-100 text-[#42A5F5]"
+              class="nav-link flex items-center px-4 py-2"
+              active-class="nav-link-active"
             >
               <i class="ri-book-2-line mr-3 text-lg" />
               <span :class="{ 'hidden': !isSidebarOpen }">Journal</span>
@@ -78,59 +87,135 @@ const onLogout = async () => {
           <li>
             <NuxtLink 
               to="/therapist" 
-              class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#42A5F5]"
-              active-class="bg-gray-100 text-[#42A5F5]"
+              class="nav-link flex items-center px-4 py-2"
+              active-class="nav-link-active"
             >
               <i class="ri-user-heart-line mr-3 text-lg" />
               <span :class="{ 'hidden': !isSidebarOpen }">Therapist</span>
             </NuxtLink>
           </li>
           <li>
-            <NuxtLink 
-              to="/settings" 
-              class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#42A5F5]"
-              active-class="bg-gray-100 text-[#42A5F5]"
+            <button 
+              class="w-full nav-link flex items-center px-4 py-2"
+              @click="openSettingsModal"
             >
               <i class="ri-settings-3-line mr-3 text-lg" />
               <span :class="{ 'hidden': !isSidebarOpen }">Settings</span>
-            </NuxtLink>
+            </button>
           </li>
         </ul>
       </nav>
-      <div class="border-t pt-4 pb-4">
+      <div class="sidebar-footer border-t pt-4 pb-4">
         <button 
-          class="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          class="w-full flex items-center px-4 py-2 logout-btn rounded-md transition-colors"
           :disabled="isLoggingOut"
           @click="confirmLogout"
         >
-          <i class="ri-logout-box-line mr-3 text-gray-500" />
+          <i class="ri-logout-box-line mr-3" />
           <span :class="{ 'hidden': !isSidebarOpen }">
             <template v-if="isLoggingOut">Logging out...</template>
             <template v-else>Logout</template>
           </span>
         </button>
       </div>
+      
+      <!-- Theme toggle in bottom corner of sidebar if expanded -->
+      <div v-if="isSidebarOpen" class="absolute bottom-20 left-4">
+        <ThemeToggle />
+      </div>
     </aside>
 
     <!-- Main content -->
-    <main class="flex-1 p-6">
+    <main class="flex-1 p-6 main-content">
       <slot />
     </main>
 
     <!-- Logout confirmation dialog - overlays the entire screen -->
     <Teleport to="body">
-      <div v-if="showLogoutConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Confirm Logout</h3>
-          <p class="mb-6 text-gray-600">Are you sure you want to log out of your account?</p>
+      <div v-if="showLogoutConfirm" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
+        <div class="modal-card p-6 rounded-lg shadow-lg w-full max-w-md">
+          <h3 class="text-lg font-medium mb-4">Confirm Logout</h3>
+          <p class="mb-6 text-secondary">Are you sure you want to log out of your account?</p>
           <div class="flex justify-end space-x-3">
             <button variant="outline" @click="cancelLogout">Cancel</button>
-            <button color="rose" :loading="isLoggingOut" @click="onLogout">
+            <button variant="danger" :loading="isLoggingOut" @click="onLogout">
               Logout
             </button>
           </div>
         </div>
       </div>
     </Teleport>
+    
+    <!-- Settings Modal -->
+    <SettingsModal 
+      :is-open="showSettingsModal" 
+      @close="closeSettingsModal" 
+    />
   </div>
-</template> 
+</template>
+
+<style scoped>
+.app-bg {
+  background-color: var(--color-background-secondary);
+}
+
+.sidebar {
+  background-color: var(--color-background-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.sidebar-header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sidebar-footer {
+  border-top: 1px solid var(--color-border);
+}
+
+.primary-text {
+  color: var(--color-primary);
+}
+
+.text-icon {
+  color: var(--color-text-secondary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.nav-link {
+  color: var(--color-text-primary);
+}
+
+.nav-link:hover {
+  background-color: var(--color-background-tertiary);
+  color: var(--color-primary);
+}
+
+.nav-link-active {
+  background-color: var(--color-background-tertiary);
+  color: var(--color-primary);
+}
+
+.logout-btn {
+  color: var(--color-text-primary);
+}
+
+.logout-btn:hover {
+  background-color: var(--color-background-tertiary);
+}
+
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-card {
+  background-color: var(--color-background-primary);
+  color: var(--color-text-primary);
+}
+
+.main-content {
+  color: var(--color-text-primary);
+}
+</style> 

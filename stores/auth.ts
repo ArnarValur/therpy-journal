@@ -9,8 +9,10 @@ import {
   updateProfile,
   type AuthError,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  type User as FirebaseUser
 } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export type User = {
   id: string;
@@ -25,6 +27,81 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null);
 
   const isLoggedIn = computed(() => !!user.value);
+
+  /**
+   * Load user data from Firestore
+   * @param userId Firebase user ID
+   */
+  const loadUserFromFirestore = async (userId: string): Promise<Partial<User> | null> => {
+    try {
+      const { $firebaseDb } = useNuxtApp();
+      const userDoc = await getDoc(doc($firebaseDb, 'users', userId));
+      
+      if (userDoc.exists()) {
+        return userDoc.data() as Partial<User>;
+      }
+      
+      return null;
+    } catch (err) {
+      console.error('Error loading user from Firestore:', err);
+      return null;
+    }
+  };
+
+  /**
+   * Save user data to Firestore
+   * @param userData User data to save
+   */
+  const saveUserToFirestore = async (userData: User): Promise<void> => {
+    try {
+      const { $firebaseDb } = useNuxtApp();
+      const userRef = doc($firebaseDb, 'users', userData.id);
+      
+      // Check if user document already exists
+      const userDoc = await getDoc(userRef);
+      
+      if (!userDoc.exists()) {
+        // Create new user document
+        await setDoc(userRef, {
+          ...userData,
+          createdAt: new Date()
+        });
+      }
+    } catch (err) {
+      console.error('Error saving user to Firestore:', err);
+    }
+  };
+
+  /**
+   * Set user object with merged data from Firebase Auth and Firestore
+   */
+  const setUserWithMergedData = async (firebaseUser: FirebaseUser) => {
+    // Create base user object from Firebase Auth data
+    const baseUser: User = {
+      id: firebaseUser.uid,
+      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      email: firebaseUser.email || '',
+      photoURL: firebaseUser.photoURL || undefined
+    };
+    
+    // Try to get user data from Firestore
+    const firestoreData = await loadUserFromFirestore(firebaseUser.uid);
+    
+    if (firestoreData) {
+      // Merge data, prioritizing Firestore data over Firebase Auth data
+      user.value = {
+        ...baseUser,
+        ...firestoreData,
+        // Always keep id and email from Auth for security
+        id: baseUser.id,
+        email: baseUser.email
+      };
+    } else {
+      // Use only Firebase Auth data and save it to Firestore
+      user.value = baseUser;
+      await saveUserToFirestore(baseUser);
+    }
+  };
 
   /**
    * Login with email and password
@@ -46,12 +123,8 @@ export const useAuthStore = defineStore('auth', () => {
       
       const firebaseUser = userCredential.user;
       
-      user.value = {
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName || email.split('@')[0],
-        email: firebaseUser.email || email,
-        photoURL: firebaseUser.photoURL || undefined
-      };
+      // Set user with merged data from Firebase Auth and Firestore
+      await setUserWithMergedData(firebaseUser);
       
     } catch (err) {
       console.error('Login error:', err);
@@ -94,12 +167,8 @@ export const useAuthStore = defineStore('auth', () => {
       const result = await signInWithPopup($firebaseAuth, googleProvider);
       const firebaseUser = result.user;
       
-      user.value = {
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-        email: firebaseUser.email || '',
-        photoURL: firebaseUser.photoURL || undefined
-      };
+      // Set user with merged data from Firebase Auth and Firestore
+      await setUserWithMergedData(firebaseUser);
       
     } catch (err) {
       console.error('Google login error:', err);
@@ -151,13 +220,19 @@ export const useAuthStore = defineStore('auth', () => {
         displayName: name
       });
       
-      // Set the user in our store
-      user.value = {
+      // Create user object
+      const newUser: User = {
         id: firebaseUser.uid,
         name: name,
         email: firebaseUser.email || email,
         photoURL: firebaseUser.photoURL || undefined
       };
+      
+      // Set user in store
+      user.value = newUser;
+      
+      // Save to Firestore
+      await saveUserToFirestore(newUser);
       
     } catch (err) {
       console.error('Registration error:', err);
@@ -251,16 +326,11 @@ export const useAuthStore = defineStore('auth', () => {
       
       return new Promise((resolve) => {
         // Set up persistent auth state listener
-        const unsubscribe = onAuthStateChanged($firebaseAuth, (firebaseUser) => {
+        const unsubscribe = onAuthStateChanged($firebaseAuth, async (firebaseUser) => {
           if (firebaseUser) {
-            // User is signed in
-            user.value = {
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-              email: firebaseUser.email || '',
-              photoURL: firebaseUser.photoURL || undefined
-            };
-            console.log(`${context} Auth state changed: User signed in`, user.value.name);
+            // User is signed in - load merged data
+            await setUserWithMergedData(firebaseUser);
+            console.log(`${context} Auth state changed: User signed in`, user.value?.name);
           } else {
             // User is signed out
             console.log(`${context} Auth state changed: User signed out`);
@@ -313,14 +383,9 @@ export const useAuthStore = defineStore('auth', () => {
       const currentUser = $firebaseAuth.currentUser;
       
       if (currentUser) {
-        // User is already signed in
-        user.value = {
-          id: currentUser.uid,
-          name: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-          email: currentUser.email || '',
-          photoURL: currentUser.photoURL || undefined
-        };
-        console.log(`${context} User already signed in:`, user.value.name);
+        // User is already signed in - load merged data
+        await setUserWithMergedData(currentUser);
+        console.log(`${context} User already signed in:`, user.value?.name);
       } else {
         console.log(`${context} No user currently signed in`);
       }
@@ -378,6 +443,8 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     checkAuth,
     resetPassword,
-    initialize
+    initialize,
+    loadUserFromFirestore,
+    saveUserToFirestore
   };
 }); 

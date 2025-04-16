@@ -96,31 +96,31 @@ const onGoogleLogin = async () => {
 <template>
   <div class="space-y-6">
     <div class="text-center">
-      <h2 class="text-2xl font-semibold mb-2">Login</h2>
-      <p class="text-gray-600">Welcome back to your journal</p>
+      <h2 class="text-2xl font-semibold mb-2 dark:text-white">Login</h2>
+      <p class="text-gray-600 dark:text-gray-300">Welcome back to your journal</p>
     </div>
 
-    <div v-if="sessionMessage" class="bg-blue-50 text-blue-600 p-3 rounded text-sm">
+    <div v-if="sessionMessage" class="bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-200 p-3 rounded text-sm">
       {{ sessionMessage }}
     </div>
 
     <form class="space-y-4" @submit.prevent="onEmailLogin">
       <div class="space-y-4">
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
           <input 
             id="email" 
             v-model="email"
             type="email" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
             placeholder="your@email.com"
             required>
         </div>
         
         <div>
           <div class="flex justify-between mb-1">
-            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-            <NuxtLink to="/forgot-password" class="text-sm text-blue-500 hover:underline">
+            <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+            <NuxtLink to="/forgot-password" class="text-sm text-blue-500 hover:underline dark:text-blue-400">
               Forgot password?
             </NuxtLink>
           </div>
@@ -129,7 +129,7 @@ const onGoogleLogin = async () => {
               id="password" 
               v-model="password"
               :type="showPassword ? 'text' : 'password'" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10 dark:bg-gray-800 dark:text-white"
               placeholder="Your password"
               required>
             <button 
@@ -137,7 +137,7 @@ const onGoogleLogin = async () => {
               class="absolute inset-y-0 right-0 pr-3 flex items-center"
               @click="showPassword = !showPassword"
             >
-              <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'" class="text-gray-500" />
+              <i :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'" class="text-gray-500 dark:text-gray-400" />
             </button>
           </div>
         </div>
@@ -157,16 +157,16 @@ const onGoogleLogin = async () => {
     
     <div class="relative">
       <div class="absolute inset-0 flex items-center">
-        <div class="w-full border-t border-gray-300" />
+        <div class="w-full border-t border-gray-300 dark:border-gray-600" />
       </div>
       <div class="relative flex justify-center text-sm">
-        <span class="px-2 bg-white text-gray-500">Or continue with</span>
+        <span class="border border-gray-300 dark:border-gray-600 px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with</span>
       </div>
     </div>
     
     <button
       type="button"
-      class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
+      class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
       :disabled="authStore.isLoading"
       @click="onGoogleLogin"
     >
@@ -184,11 +184,18 @@ const onGoogleLogin = async () => {
       </span>
     </button>
     
-    <div class="text-center text-sm">
+    <div class="text-center text-sm text-gray-600 dark:text-gray-300">
       Don't have an account?
-      <NuxtLink to="/register" class="text-blue-500 hover:underline">
+      <NuxtLink to="/register" class="text-blue-500 dark:text-blue-400 hover:underline">
         Register
       </NuxtLink>
     </div>
   </div>
 </template> 
+
+<style scoped>
+.dark-mode .auth-span {
+  background-color: var(--color-background-primary);
+}
+</style>
+

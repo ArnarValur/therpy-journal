@@ -6,6 +6,9 @@ import { useLoadingState } from '~/composables/useLoadingState';
 const authStore = useAuthStore();
 const { startLoading, endLoading } = useLoadingState();
 
+// Check if in development mode
+const isDev = import.meta.dev || false;
+
 // Add a small delay before showing content to avoid flashing between pages
 // This gives time for the auth state to be determined
 const showContent = ref(false);
@@ -47,7 +50,7 @@ const shouldShowContent = computed(() => {
 </script>
 
 <template>
-  <div>
+  <div :class="{ 'dark': $colorMode.value === 'dark' }">
     <GlobalLoading />
     <ErrorToast />
     
@@ -55,6 +58,11 @@ const shouldShowContent = computed(() => {
     <NuxtLayout v-if="shouldShowContent">
       <NuxtPage />
     </NuxtLayout>
+
+    <!-- Debug: Show current theme in bottom right corner during development -->
+    <div v-if="isDev" class="fixed bottom-2 right-2 text-xs py-1 px-2 bg-opacity-70 rounded theme-debug">
+      Theme: {{ $colorMode.preference }} ({{ $colorMode.value }})
+    </div>
   </div>
 </template>
 
@@ -68,7 +76,8 @@ const shouldShowContent = computed(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--color-background-primary);
+  opacity: 0.9;
   z-index: 9999;
 }
 
@@ -76,9 +85,15 @@ const shouldShowContent = computed(() => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #42A5F5;
+  border: 3px solid var(--color-background-tertiary);
+  border-top: 3px solid var(--color-primary);
   animation: spin 1s linear infinite;
+}
+
+.theme-debug {
+  background-color: var(--color-background-primary);
+  color: var(--color-text-secondary);
+  z-index: 100;
 }
 
 @keyframes spin {

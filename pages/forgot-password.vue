@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
+import { useErrorHandler } from '~/composables/useErrorHandler';
+import { useLoadingState } from '~/composables/useLoadingState';
 
 // Define page metadata with auth layout
 definePageMeta({
@@ -8,21 +10,26 @@ definePageMeta({
 });
 
 const authStore = useAuthStore();
+const { logError } = useErrorHandler();
+const { startLoading, endLoading } = useLoadingState();
+
 const email = ref('');
 const isSubmitted = ref(false);
-const errorMessage = ref('');
 
 const onSubmit = async () => {
   if (!email.value) {
-    errorMessage.value = 'Please enter your email address';
+    logError('Please enter your email address', 'validation');
     return;
   }
   
   try {
+    startLoading('reset-password', 'Sending reset link...');
     await authStore.resetPassword(email.value);
     isSubmitted.value = true;
-  } catch {
-    errorMessage.value = authStore.error || 'Failed to send password reset email';
+  } catch (error) {
+    logError(error, 'auth');
+  } finally {
+    endLoading('reset-password');
   }
 };
 </script>
@@ -30,30 +37,26 @@ const onSubmit = async () => {
 <template>
   <div class="space-y-6">
     <div class="text-center">
-      <h2 class="text-2xl font-semibold mb-2">Reset Password</h2>
-      <p class="text-gray-600">We'll send you a link to reset your password</p>
+      <h2 class="text-2xl font-semibold mb-2 dark:text-white">Reset Password</h2>
+      <p class="text-gray-600 dark:text-gray-300">We'll send you a link to reset your password</p>
     </div>
 
-    <div v-if="isSubmitted" class="bg-green-50 text-green-600 p-4 rounded text-center">
+    <div v-if="isSubmitted" class="bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-200 p-4 rounded text-center">
       <p>If an account exists with this email, you will receive a password reset link.</p>
-      <NuxtLink to="/login" class="block mt-4 text-blue-500 hover:underline">
+      <NuxtLink to="/login" class="block mt-4 text-blue-500 dark:text-blue-400 hover:underline">
         Return to login
       </NuxtLink>
     </div>
     
     <template v-else>
-      <div v-if="errorMessage" class="bg-red-50 text-red-600 p-3 rounded text-sm">
-        {{ errorMessage }}
-      </div>
-
       <form class="space-y-6" @submit.prevent="onSubmit">
         <div>
-          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
           <input 
             id="email" 
             v-model="email"
             type="email" 
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white"
             placeholder="Enter your registered email"
             required>
         </div>
@@ -70,11 +73,17 @@ const onSubmit = async () => {
         </button>
       </form>
       
-      <div class="text-center text-sm pt-4">
-        <NuxtLink to="/login" class="text-blue-500 hover:underline">
+      <div class="text-center text-sm pt-4 text-gray-600 dark:text-gray-300">
+        <NuxtLink to="/login" class="text-blue-500 dark:text-blue-400 hover:underline">
           Back to login
         </NuxtLink>
       </div>
     </template>
   </div>
-</template> 
+</template>
+
+<style scoped>
+.dark-mode .auth-span {
+  background-color: var(--color-background-primary);
+}
+</style> 
