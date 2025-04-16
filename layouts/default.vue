@@ -1,22 +1,28 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useAuthStore } from '~/stores/auth';
+import { useLogout } from '~/composables/useLogout';
 
 const isSidebarOpen = ref(true);
-const authStore = useAuthStore();
-const router = useRouter();
+const { logout, isLoggingOut } = useLogout();
+const showLogoutConfirm = ref(false);
 
 const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
 };
 
+const confirmLogout = () => {
+  showLogoutConfirm.value = true;
+};
+
+const cancelLogout = () => {
+  showLogoutConfirm.value = false;
+};
+
 const onLogout = async () => {
-  try {
-    await authStore.logout();
-    await router.push('/login');
-  } catch (error) {
-    console.error('Logout failed:', error);
-  }
+  if (isLoggingOut.value) return;
+  
+  showLogoutConfirm.value = false;
+  await logout();
 };
 </script>
 
@@ -25,7 +31,7 @@ const onLogout = async () => {
     <!-- Sidebar -->
     <aside
       :class="[
-        'bg-white shadow-md transition-all duration-300 z-20 h-screen sticky top-0',
+        'bg-white shadow-md transition-all duration-300 z-20 h-screen sticky top-0 flex flex-col',
         isSidebarOpen ? 'w-64' : 'w-16'
       ]"
     >
@@ -47,7 +53,7 @@ const onLogout = async () => {
           <i :class="['ri-menu-fold-line', isSidebarOpen ? 'ri-menu-fold-line' : 'ri-menu-unfold-line']" />
         </RButton>
       </div>
-      <nav class="py-4">
+      <nav class="py-4 flex-grow">
         <ul class="space-y-2">
           <li>
             <NuxtLink 
@@ -91,13 +97,17 @@ const onLogout = async () => {
           </li>
         </ul>
       </nav>
-      <div class="mt-auto border-t pt-4">
+      <div class="border-t pt-4 pb-4">
         <button 
           class="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-          @click="onLogout"
+          :disabled="isLoggingOut"
+          @click="confirmLogout"
         >
           <i class="ri-logout-box-line mr-3 text-gray-500" />
-          <span>Logout</span>
+          <span :class="{ 'hidden': !isSidebarOpen }">
+            <template v-if="isLoggingOut">Logging out...</template>
+            <template v-else>Logout</template>
+          </span>
         </button>
       </div>
     </aside>
@@ -106,5 +116,21 @@ const onLogout = async () => {
     <main class="flex-1 p-6">
       <slot />
     </main>
+
+    <!-- Logout confirmation dialog - overlays the entire screen -->
+    <Teleport to="body">
+      <div v-if="showLogoutConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Confirm Logout</h3>
+          <p class="mb-6 text-gray-600">Are you sure you want to log out of your account?</p>
+          <div class="flex justify-end space-x-3">
+            <button variant="outline" @click="cancelLogout">Cancel</button>
+            <button color="rose" :loading="isLoggingOut" @click="onLogout">
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template> 

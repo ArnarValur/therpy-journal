@@ -41,10 +41,31 @@ export function useFirebaseAuth() {
    */
   const getCurrentUser = () => $firebaseAuth.currentUser;
   
+  /**
+   * Checks if the current token is valid and not expired
+   * Useful for detecting session timeout and forcing logout
+   * @returns Promise resolving to boolean indicating if token is valid
+   */
+  const isTokenValid = async () => {
+    const user = getCurrentUser();
+    if (!user) return false;
+    
+    try {
+      // Force token refresh if needed
+      await user.getIdToken(true);
+      return true;
+    } catch (error) {
+      console.error('Token validation error:', error);
+      // If there's an error, the token is likely invalid
+      return false;
+    }
+  };
+  
   return {
     auth: $firebaseAuth,
     setupAuthListener,
     getAuth,
-    getCurrentUser
+    getCurrentUser,
+    isTokenValid
   };
 } 

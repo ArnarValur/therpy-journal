@@ -166,14 +166,39 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   const logout = async () => {
+    isLoading.value = true;
+    error.value = null;
+
     try {
       const { $firebaseAuth } = useNuxtApp();
+      
+      // Call Firebase signOut method
       await signOut($firebaseAuth);
+      
+      // Clear user data from store
       user.value = null;
+      
+      // Clear any sensitive data from local storage if needed
+      localStorage.removeItem('user-session-data');
+      
+      // Clear any other auth-related state if needed
+      
+      // Return success for UI handling
+      return { success: true };
     } catch (err) {
       console.error('Logout error:', err);
-      error.value = 'Failed to logout. Please try again.';
+      
+      // Set appropriate error message
+      const firebaseError = err as AuthError;
+      if (firebaseError.code?.includes('network')) {
+        error.value = 'Network error during logout. You may still be logged in on the server.';
+      } else {
+        error.value = 'Failed to logout. Please try again.';
+      }
+      
       throw err;
+    } finally {
+      isLoading.value = false;
     }
   };
 

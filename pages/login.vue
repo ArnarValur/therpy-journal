@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 // Define page metadata with auth layout
@@ -9,14 +9,34 @@ definePageMeta({
 });
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
 const errorMessage = ref('');
+const sessionMessage = ref('');
+
+// Check for session expiration or other redirect messages
+onMounted(() => {
+  if (route.query.reason === 'session-expired') {
+    sessionMessage.value = route.query.message as string || 'Your session has expired. Please log in again.';
+    
+    // Clear the URL query parameters after showing the message
+    router.replace({ query: {} });
+  } else if (route.query.reason === 'logged-out') {
+    sessionMessage.value = route.query.message as string || 'You have been logged out successfully.';
+    
+    // Clear the URL query parameters after showing the message
+    router.replace({ query: {} });
+  }
+});
 
 const onEmailLogin = async () => {
+  errorMessage.value = '';
+  sessionMessage.value = '';
+  
   if (!email.value || !password.value) {
     errorMessage.value = 'Please enter both email and password';
     return;
@@ -31,6 +51,9 @@ const onEmailLogin = async () => {
 };
 
 const onGoogleLogin = async () => {
+  errorMessage.value = '';
+  sessionMessage.value = '';
+  
   try {
     await authStore.loginWithGoogle();
     await router.push('/');
@@ -49,6 +72,10 @@ const onGoogleLogin = async () => {
 
     <div v-if="errorMessage" class="bg-red-50 text-red-600 p-3 rounded text-sm">
       {{ errorMessage }}
+    </div>
+    
+    <div v-if="sessionMessage" class="bg-blue-50 text-blue-600 p-3 rounded text-sm">
+      {{ sessionMessage }}
     </div>
 
     <form class="space-y-4" @submit.prevent="onEmailLogin">
