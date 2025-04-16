@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
+import { useErrorHandler } from '~/composables/useErrorHandler';
+import { useLoadingState } from '~/composables/useLoadingState';
 
 // Define page metadata with auth layout
 definePageMeta({
@@ -11,6 +13,8 @@ definePageMeta({
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const { logError } = useErrorHandler();
+const { startLoading, endLoading } = useLoadingState();
 
 const email = ref('');
 const password = ref('');
@@ -30,6 +34,17 @@ onMounted(() => {
     
     // Clear the URL query parameters after showing the message
     router.replace({ query: {} });
+  } else if (route.query.redirect === 'auth_required') {
+    sessionMessage.value = route.query.message as string || 'Please log in to access that page.';
+    
+    // Keep the URL parameters in case login needs them, but remove the message
+    router.replace({
+      ...route,
+      query: {
+        ...route.query,
+        message: undefined
+      }
+    });
   }
 });
 
@@ -43,10 +58,17 @@ const onEmailLogin = async () => {
   }
 
   try {
+    startLoading('login', 'Logging in...');
     await authStore.login(email.value, password.value);
+    
+    // Navigate to dashboard or redirected path
     await router.push('/');
-  } catch {
-    errorMessage.value = authStore.error || 'Invalid email or password';
+  } catch (error) {
+    // Handle the error with our error handler
+    const appError = logError(error, 'auth');
+    errorMessage.value = appError.message;
+  } finally {
+    endLoading('login');
   }
 };
 
@@ -55,10 +77,25 @@ const onGoogleLogin = async () => {
   sessionMessage.value = '';
   
   try {
+    startLoading('google-login', 'Signing in with Google...');
     await authStore.loginWithGoogle();
+    
+    // Navigate to dashboard or redirected path
     await router.push('/');
-  } catch {
-    errorMessage.value = authStore.error || 'Google login failed';
+  } catch (error) {
+    // Only show error if it's not a user cancellation
+    if (error && typeof error === 'object' && 'code' in error) {
+      const code = String(error.code || '');
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+        const appError = logError(error, 'auth');
+        errorMessage.value = appError.message;
+      }
+    } else {
+      const appError = logError(error, 'auth');
+      errorMessage.value = appError.message;
+    }
+  } finally {
+    endLoading('google-login');
   }
 };
 </script>

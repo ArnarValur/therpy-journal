@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth';
+import { useLoadingState } from '~/composables/useLoadingState';
 
 // Get auth store to access loading state
 const authStore = useAuthStore();
+const { startLoading, endLoading } = useLoadingState();
 
 // Add a small delay before showing content to avoid flashing between pages
 // This gives time for the auth state to be determined
@@ -13,8 +15,24 @@ onMounted(() => {
   // Mark that we're now on the client side
   isClient.value = true;
   
+  // Track auth loading state in our global loading system
+  if (authStore.isLoading) {
+    startLoading('auth-initialization', 'Initializing application...');
+  }
+  
+  // Watch auth loading state and update global loading accordingly
+  watch(() => authStore.isLoading, (isAuthLoading) => {
+    if (isAuthLoading) {
+      startLoading('auth-initialization', 'Initializing application...');
+    } else {
+      endLoading('auth-initialization');
+    }
+  });
+  
   setTimeout(() => {
     showContent.value = true;
+    // End loading after the delay regardless
+    endLoading('auth-initialization');
   }, 300); // Increased delay to ensure auth is loaded
 });
 
@@ -30,10 +48,8 @@ const shouldShowContent = computed(() => {
 
 <template>
   <div>
-    <!-- Show loading indicator while auth is initializing on client side only -->
-    <div v-if="isClient && authStore.isLoading && !showContent" class="auth-loading">
-      <div class="loading-spinner"></div>
-    </div>
+    <GlobalLoading />
+    <ErrorToast />
     
     <!-- Show content once we're ready -->
     <NuxtLayout v-if="shouldShowContent">
