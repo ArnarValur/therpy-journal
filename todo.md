@@ -2,10 +2,10 @@
 
 ## 1. Authentication System
 - [ ] Complete Firebase Authentication setup
-  - [ ] Implement email/password login functionality
-  - [ ] Implement password reset functionality
-  - [ ] Add Google popup signin integration
-  - [ ] Add user registration with email validation
+  - [x] Implement email/password login functionality
+  - [x] Implement password reset functionality
+  - [x] Add Google popup signin integration
+  - [x] Add user registration with email validation
   - [ ] Create session persistence using Firebase auth state listener
   - [ ] Implement secure logout functionality
   - [ ] Set up protected routes with auth middleware
