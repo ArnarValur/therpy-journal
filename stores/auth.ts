@@ -180,10 +180,32 @@ export const useAuthStore = defineStore('auth', () => {
   const checkAuth = async () => {
     isLoading.value = true;
     
+    const isServer = import.meta.server;
+    const context = isServer ? '[SERVER]' : '[CLIENT]';
+    
     try {
-      const { $firebaseAuth } = useNuxtApp();
+      // Skip auth check on server side - we'll handle auth on client only
+      if (isServer) {
+        console.log(`${context} Auth check skipped on server`);
+        isLoading.value = false;
+        return { user: null, unsubscribe: () => {} };
+      }
+      
+      const nuxtApp = useNuxtApp();
+      
+      // Check if Firebase Auth is available
+      if (!nuxtApp.$firebaseAuth) {
+        console.warn(`${context} Firebase Auth not yet initialized in checkAuth`);
+        isLoading.value = false;
+        return { user: null, unsubscribe: () => {} };
+      }
+      
+      const { $firebaseAuth } = nuxtApp;
+      
+      console.log(`${context} Setting up auth state listener`);
       
       return new Promise((resolve) => {
+        // Set up persistent auth state listener
         const unsubscribe = onAuthStateChanged($firebaseAuth, (firebaseUser) => {
           if (firebaseUser) {
             // User is signed in
@@ -193,20 +215,75 @@ export const useAuthStore = defineStore('auth', () => {
               email: firebaseUser.email || '',
               photoURL: firebaseUser.photoURL || undefined
             };
+            console.log(`${context} Auth state changed: User signed in`, user.value.name);
           } else {
             // User is signed out
+            console.log(`${context} Auth state changed: User signed out`);
             user.value = null;
           }
           
           isLoading.value = false;
-          resolve(user.value);
-          unsubscribe(); // Unsubscribe after initial check
+          resolve({ user: user.value, unsubscribe });
         });
       });
     } catch (err) {
-      console.error('Auth check error:', err);
+      console.error(`${context} Auth check error:`, err);
       isLoading.value = false;
-      throw err;
+      return { user: null, unsubscribe: () => {} };
+    }
+  };
+
+  // Method to initialize auth state on app boot
+  const initialize = async () => {
+    // Set loading to true only if we're not already logged in
+    if (!user.value) {
+      isLoading.value = true;
+    }
+    
+    const isServer = import.meta.server;
+    const context = isServer ? '[SERVER]' : '[CLIENT]';
+    
+    try {
+      // Only run full initialization on client-side
+      if (isServer) {
+        console.log(`${context} Auth initialization skipped on server`);
+        isLoading.value = false;
+        return null;
+      }
+      
+      const nuxtApp = useNuxtApp();
+      
+      // Check if Firebase Auth is available
+      if (!nuxtApp.$firebaseAuth) {
+        console.warn(`${context} Firebase Auth not yet initialized`);
+        isLoading.value = false;
+        return null;
+      }
+      
+      const { $firebaseAuth } = nuxtApp;
+      
+      // Check if user is already logged in (e.g., from a previous session)
+      const currentUser = $firebaseAuth.currentUser;
+      
+      if (currentUser) {
+        // User is already signed in
+        user.value = {
+          id: currentUser.uid,
+          name: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+          email: currentUser.email || '',
+          photoURL: currentUser.photoURL || undefined
+        };
+        console.log(`${context} User already signed in:`, user.value.name);
+      } else {
+        console.log(`${context} No user currently signed in`);
+      }
+      
+      isLoading.value = false;
+      return user.value;
+    } catch (err) {
+      console.error(`${context} Auth initialization error:`, err);
+      isLoading.value = false;
+      return null;
     }
   };
 
@@ -248,5 +325,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     checkAuth,
     resetPassword,
+    initialize
   };
 }); 

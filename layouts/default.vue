@@ -10,9 +10,13 @@ const toggleSidebar = () => {
   isSidebarOpen.value = !isSidebarOpen.value;
 };
 
-const handleLogout = async () => {
-  await authStore.logout();
-  await router.push('/login');
+const onLogout = async () => {
+  try {
+    await authStore.logout();
+    await router.push('/login');
+  } catch (error) {
+    console.error('Logout failed:', error);
+  }
 };
 </script>
 
@@ -37,10 +41,10 @@ const handleLogout = async () => {
         <RButton
           variant="ghost"
           size="sm"
-          @click="toggleSidebar"
           :aria-label="isSidebarOpen ? 'Close sidebar' : 'Open sidebar'"
+          @click="toggleSidebar"
         >
-          <i :class="['ri-menu-fold-line', isSidebarOpen ? 'ri-menu-fold-line' : 'ri-menu-unfold-line']"></i>
+          <i :class="['ri-menu-fold-line', isSidebarOpen ? 'ri-menu-fold-line' : 'ri-menu-unfold-line']" />
         </RButton>
       </div>
       <nav class="py-4">
@@ -51,7 +55,7 @@ const handleLogout = async () => {
               class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#42A5F5]"
               active-class="bg-gray-100 text-[#42A5F5]"
             >
-              <i class="ri-dashboard-line mr-3 text-lg"></i>
+              <i class="ri-dashboard-line mr-3 text-lg" />
               <span :class="{ 'hidden': !isSidebarOpen }">Dashboard</span>
             </NuxtLink>
           </li>
@@ -61,7 +65,7 @@ const handleLogout = async () => {
               class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#42A5F5]"
               active-class="bg-gray-100 text-[#42A5F5]"
             >
-              <i class="ri-book-2-line mr-3 text-lg"></i>
+              <i class="ri-book-2-line mr-3 text-lg" />
               <span :class="{ 'hidden': !isSidebarOpen }">Journal</span>
             </NuxtLink>
           </li>
@@ -71,7 +75,7 @@ const handleLogout = async () => {
               class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#42A5F5]"
               active-class="bg-gray-100 text-[#42A5F5]"
             >
-              <i class="ri-user-heart-line mr-3 text-lg"></i>
+              <i class="ri-user-heart-line mr-3 text-lg" />
               <span :class="{ 'hidden': !isSidebarOpen }">Therapist</span>
             </NuxtLink>
           </li>
@@ -81,22 +85,20 @@ const handleLogout = async () => {
               class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#42A5F5]"
               active-class="bg-gray-100 text-[#42A5F5]"
             >
-              <i class="ri-settings-3-line mr-3 text-lg"></i>
+              <i class="ri-settings-3-line mr-3 text-lg" />
               <span :class="{ 'hidden': !isSidebarOpen }">Settings</span>
             </NuxtLink>
           </li>
         </ul>
       </nav>
-      <div class="absolute bottom-0 w-full border-t p-4">
-        <RButton
-          variant="ghost"
-          size="sm"
-          class="flex items-center w-full justify-start text-red-500 hover:text-red-700"
-          @click="handleLogout"
+      <div class="mt-auto border-t pt-4">
+        <button 
+          class="w-full flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          @click="onLogout"
         >
-          <i class="ri-logout-box-line mr-3 text-lg"></i>
-          <span :class="{ 'hidden': !isSidebarOpen }">Logout</span>
-        </RButton>
+          <i class="ri-logout-box-line mr-3 text-gray-500" />
+          <span>Logout</span>
+        </button>
       </div>
     </aside>
 

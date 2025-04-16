@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useAuthStore } from '~/stores/auth';
 
 definePageMeta({
-  layout: 'default'
+  layout: 'default',
+  middleware: ['auth']
 });
+
+const authStore = useAuthStore();
 
 // Mock data for recent entries
 const recentEntries = ref([
@@ -31,7 +35,7 @@ const recentEntries = ref([
 ]);
 
 // Mock sentiment data for chart
-const sentimentData = {
+const _sentimentData = {
   positive: 12,
   neutral: 8,
   negative: 5
@@ -41,9 +45,12 @@ const sentimentData = {
 <template>
   <div class="space-y-8">
     <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+        <p class="text-gray-600">Welcome, {{ authStore.user?.name || 'User' }}!</p>
+      </div>
       <RButton variant="primary" to="/journal/new">
-        <i class="ri-add-line mr-2"></i>
+        <i class="ri-add-line mr-2" />
         New Entry
       </RButton>
     </div>
@@ -53,7 +60,7 @@ const sentimentData = {
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-medium text-gray-700">Total Entries</h3>
-          <i class="ri-book-2-line text-[#42A5F5] text-xl"></i>
+          <i class="ri-book-2-line text-[#42A5F5] text-xl" />
         </div>
         <p class="text-3xl font-bold text-gray-800">25</p>
         <p class="text-sm text-gray-500 mt-1">Last entry 2 days ago</p>
@@ -62,7 +69,7 @@ const sentimentData = {
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-medium text-gray-700">Mood Trend</h3>
-          <i class="ri-emotion-line text-[#26A69A] text-xl"></i>
+          <i class="ri-emotion-line text-[#26A69A] text-xl" />
         </div>
         <p class="text-3xl font-bold text-[#26A69A]">Positive</p>
         <p class="text-sm text-gray-500 mt-1">Based on your recent entries</p>
@@ -71,7 +78,7 @@ const sentimentData = {
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-lg font-medium text-gray-700">Streak</h3>
-          <i class="ri-fire-line text-orange-500 text-xl"></i>
+          <i class="ri-fire-line text-orange-500 text-xl" />
         </div>
         <p class="text-3xl font-bold text-gray-800">7 days</p>
         <p class="text-sm text-gray-500 mt-1">Keep up the good work!</p>
@@ -102,14 +109,14 @@ const sentimentData = {
                 'bg-gray-400': entry.sentiment === 'neutral',
                 'bg-red-500': entry.sentiment === 'negative'
               }"
-            ></div>
+            />
           </div>
         </div>
       </div>
       <div class="border-t px-6 py-4">
         <NuxtLink to="/journal" class="text-[#42A5F5] hover:underline flex items-center">
           View all entries
-          <i class="ri-arrow-right-line ml-1"></i>
+          <i class="ri-arrow-right-line ml-1" />
         </NuxtLink>
       </div>
     </div>
