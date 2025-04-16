@@ -61,6 +61,9 @@ export function useFirebaseAuth() {
     }
   };
   
+  /**
+   * Return the store state
+   */
   return {
     auth: $firebaseAuth,
     setupAuthListener,

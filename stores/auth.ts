@@ -26,6 +26,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => !!user.value);
 
+  /**
+   * Login with email and password
+   * @param email 
+   * @param password 
+   */
   const login = async (email: string, password: string) => {
     isLoading.value = true;
     error.value = null;
@@ -71,6 +76,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+  /**
+   * Login with Google
+   */
   const loginWithGoogle = async () => {
     isLoading.value = true;
     error.value = null;
@@ -116,6 +124,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+  /**
+   * Register a new user
+   * @param name 
+   * @param email 
+   * @param password 
+   */
   const register = async (name: string, email: string, password: string) => {
     isLoading.value = true;
     error.value = null;
@@ -164,7 +178,10 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = false;
     }
   };
-
+ 
+  /**
+   * Logout the user
+   */
   const logout = async () => {
     isLoading.value = true;
     error.value = null;
@@ -202,6 +219,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
+  /**
+   * Check if the user is authenticated
+   */
   const checkAuth = async () => {
     isLoading.value = true;
     
@@ -258,7 +278,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  // Method to initialize auth state on app boot
+  /**
+   * Initialize the auth state on app boot
+   */
   const initialize = async () => {
     // Set loading to true only if we're not already logged in
     if (!user.value) {
@@ -312,7 +334,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  // Add password reset functionality
+  /**
+   * Reset the user's password
+   * @param email 
+   */
   const resetPassword = async (email: string) => {
     isLoading.value = true;
     error.value = null;
@@ -338,7 +363,10 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = false;
     }
   };
-
+  
+  /**
+   * Return the store state
+   */
   return {
     user,
     isLoading,

@@ -19,7 +19,6 @@ const { startLoading, endLoading } = useLoadingState();
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
-const errorMessage = ref('');
 const sessionMessage = ref('');
 
 // Check for session expiration or other redirect messages
@@ -49,11 +48,10 @@ onMounted(() => {
 });
 
 const onEmailLogin = async () => {
-  errorMessage.value = '';
   sessionMessage.value = '';
   
   if (!email.value || !password.value) {
-    errorMessage.value = 'Please enter both email and password';
+    logError('Please enter both email and password', 'validation');
     return;
   }
 
@@ -64,16 +62,13 @@ const onEmailLogin = async () => {
     // Navigate to dashboard or redirected path
     await router.push('/');
   } catch (error) {
-    // Handle the error with our error handler
-    const appError = logError(error, 'auth');
-    errorMessage.value = appError.message;
+    logError(error, 'auth');
   } finally {
     endLoading('login');
   }
 };
 
 const onGoogleLogin = async () => {
-  errorMessage.value = '';
   sessionMessage.value = '';
   
   try {
@@ -87,12 +82,10 @@ const onGoogleLogin = async () => {
     if (error && typeof error === 'object' && 'code' in error) {
       const code = String(error.code || '');
       if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
-        const appError = logError(error, 'auth');
-        errorMessage.value = appError.message;
+        logError(error, 'auth');
       }
     } else {
-      const appError = logError(error, 'auth');
-      errorMessage.value = appError.message;
+      logError(error, 'auth');
     }
   } finally {
     endLoading('google-login');
@@ -107,10 +100,6 @@ const onGoogleLogin = async () => {
       <p class="text-gray-600">Welcome back to your journal</p>
     </div>
 
-    <div v-if="errorMessage" class="bg-red-50 text-red-600 p-3 rounded text-sm">
-      {{ errorMessage }}
-    </div>
-    
     <div v-if="sessionMessage" class="bg-blue-50 text-blue-600 p-3 rounded text-sm">
       {{ sessionMessage }}
     </div>

@@ -1,16 +1,16 @@
 # TherapyJournal Project Todo List
 
 ## 1. Authentication System
-- [ ] Complete Firebase Authentication setup
+- [x] Complete Firebase Authentication setup
   - [x] Implement email/password login functionality
   - [x] Implement password reset functionality
   - [x] Add Google popup signin integration
   - [x] Add user registration with email validation
-  - [ ] Create session persistence using Firebase auth state listener
+  - [x] Create session persistence using Firebase auth state listener
   - [x] Implement secure logout functionality
-  - [ ] Set up protected routes with auth middleware
-  - [ ] Add loading states for auth operations
-  - [ ] Implement proper error handling for auth failures
+  - [x] Set up protected routes with auth middleware
+  - [x] Add loading states for auth operations
+  - [x] Implement proper error handling for auth failures
 
 ## 2. Journal Entry System
 - [ ] Create journal entry editor component

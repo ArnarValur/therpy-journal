@@ -1,5 +1,9 @@
 import { useAuthStore } from '~/stores/auth';
 
+/**
+ * Middleware to handle authentication state and redirects
+ * @param to - The route to navigate to
+ */
 export default defineNuxtRouteMiddleware(async (to) => {
   // Skip auth check on server side - we'll handle auth purely on client side
   // This prevents the server from redirecting (which causes a flash of login page)
