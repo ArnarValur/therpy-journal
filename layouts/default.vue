@@ -171,6 +171,13 @@ const handleNavigation = () => {
                 </NuxtLink>
               </li>
               <!-- Settings -->
+              
+            </ul>
+          </nav>
+
+          <!-- Footer section on sidebar -->
+          <div class="border-t pt-4">
+            <ul class="space-y-2">
               <li>
                 <button 
                   class="w-full nav-link flex items-center px-4 py-2"
@@ -181,24 +188,21 @@ const handleNavigation = () => {
                   <span :class="{ 'md:hidden': !sidebarOpen }">Settings</span>
                 </button>
               </li>
+              <li>
+                <button 
+                  class="w-full flex items-center px-4 py-2 logout-btn transition-colors"
+                  :class="{ 'md:justify-center': !sidebarOpen }"
+                  :disabled="isLoggingOut"
+                  @click="confirmLogout"
+                >
+                <i class="ri-logout-box-line" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
+                <span :class="{ 'md:hidden': !sidebarOpen }">
+                  <template v-if="isLoggingOut">Logging out...</template>
+                  <template v-else>Logout</template>
+                </span>
+                </button>
+              </li>
             </ul>
-          </nav>
-
-          <!-- Footer section on sidebar -->
-          <div class="border-t pt-4">
-            <button 
-              class="w-full flex items-center px-4 py-2 logout-btn transition-colors"
-              :class="{ 'md:justify-center': !sidebarOpen }"
-              :disabled="isLoggingOut"
-              @click="confirmLogout"
-            >
-              <i class="ri-logout-box-line" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
-              <span :class="{ 'md:hidden': !sidebarOpen }">
-                <template v-if="isLoggingOut">Logging out...</template>
-                <template v-else>Logout</template>
-              </span>
-            </button>
-          
             <!-- Theme toggle in sidebar - works for both expanded and collapsed states -->
             <div :class="['mx-auto mt-4', 'flex justify-center']">
               <ThemeToggle />
