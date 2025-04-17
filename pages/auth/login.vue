@@ -143,6 +143,7 @@ const onGoogleLogin = async () => {
         </div>
       </div>
       
+      <!-- TODO: Add a button component -->
       <button
         type="submit"
         class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out flex justify-center items-center"
@@ -164,6 +165,7 @@ const onGoogleLogin = async () => {
       </div>
     </div>
     
+    <!-- TODO: Add a button component -->
     <button
       type="button"
       class="w-full flex justify-center items-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"

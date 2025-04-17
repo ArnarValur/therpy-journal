@@ -142,6 +142,7 @@ const onSubmit = async () => {
           </div>
         </div>
         
+        <!-- TODO: Add a button component -->
         <button
           type="submit"
           class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out flex justify-center items-center"

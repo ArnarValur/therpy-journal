@@ -68,6 +68,7 @@ const handleNewEntry = () => {
     </div>
 
     <!-- Stats cards -->
+    <!-- TODO: Add those cards as components -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
       <div class="rounded-lg shadow-md bg-white dark:bg-gray-800 p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
         <div class="flex justify-between items-center mb-2 sm:mb-4">
@@ -98,6 +99,7 @@ const handleNewEntry = () => {
     </div>
 
     <!-- Recent entries -->
+    <!-- TODO: Retrieve recent entries from the database -->
     <div class="rounded-lg shadow-md bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
       <div class="border-b dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4">
         <h2 class="text-base sm:text-lg font-medium dark:text-white">Recent Entries</h2>
