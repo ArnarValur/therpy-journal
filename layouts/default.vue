@@ -56,6 +56,7 @@ const closeSettingsModal = () => {
         <button
           variant="ghost"
           size="sm"
+          :class="{ 'w-full flex justify-center': !isSidebarOpen }"
           :aria-label="isSidebarOpen ? 'Close sidebar' : 'Open sidebar'"
           @click="toggleSidebar"
         >
@@ -68,9 +69,10 @@ const closeSettingsModal = () => {
             <NuxtLink 
               to="/" 
               class="nav-link flex items-center px-4 py-2"
+              :class="{ 'justify-center': !isSidebarOpen }"
               active-class="nav-link-active"
             >
-              <i class="ri-dashboard-line mr-3 text-lg" />
+              <i class="ri-dashboard-line text-lg" :class="isSidebarOpen ? 'mr-3' : ''" />
               <span :class="{ 'hidden': !isSidebarOpen }">Dashboard</span>
             </NuxtLink>
           </li>
@@ -78,9 +80,10 @@ const closeSettingsModal = () => {
             <NuxtLink 
               to="/journal" 
               class="nav-link flex items-center px-4 py-2"
+              :class="{ 'justify-center': !isSidebarOpen }"
               active-class="nav-link-active"
             >
-              <i class="ri-book-2-line mr-3 text-lg" />
+              <i class="ri-book-2-line text-lg" :class="isSidebarOpen ? 'mr-3' : ''" />
               <span :class="{ 'hidden': !isSidebarOpen }">Journal</span>
             </NuxtLink>
           </li>
@@ -88,18 +91,20 @@ const closeSettingsModal = () => {
             <NuxtLink 
               to="/therapist" 
               class="nav-link flex items-center px-4 py-2"
+              :class="{ 'justify-center': !isSidebarOpen }"
               active-class="nav-link-active"
             >
-              <i class="ri-user-heart-line mr-3 text-lg" />
+              <i class="ri-user-heart-line text-lg" :class="isSidebarOpen ? 'mr-3' : ''" />
               <span :class="{ 'hidden': !isSidebarOpen }">Therapist</span>
             </NuxtLink>
           </li>
           <li>
             <button 
               class="w-full nav-link flex items-center px-4 py-2"
+              :class="{ 'justify-center': !isSidebarOpen }"
               @click="openSettingsModal"
             >
-              <i class="ri-settings-3-line mr-3 text-lg" />
+              <i class="ri-settings-3-line text-lg" :class="isSidebarOpen ? 'mr-3' : ''" />
               <span :class="{ 'hidden': !isSidebarOpen }">Settings</span>
             </button>
           </li>
@@ -108,10 +113,11 @@ const closeSettingsModal = () => {
       <div class="sidebar-footer border-t pt-4 pb-4">
         <button 
           class="w-full flex items-center px-4 py-2 logout-btn rounded-md transition-colors"
+          :class="{ 'justify-center': !isSidebarOpen }"
           :disabled="isLoggingOut"
           @click="confirmLogout"
         >
-          <i class="ri-logout-box-line mr-3" />
+          <i class="ri-logout-box-line" :class="isSidebarOpen ? 'mr-3' : ''" />
           <span :class="{ 'hidden': !isSidebarOpen }">
             <template v-if="isLoggingOut">Logging out...</template>
             <template v-else>Logout</template>
@@ -119,8 +125,8 @@ const closeSettingsModal = () => {
         </button>
       </div>
       
-      <!-- Theme toggle in bottom corner of sidebar if expanded -->
-      <div v-if="isSidebarOpen" class="absolute bottom-20 left-4">
+      <!-- Theme toggle in sidebar - works for both expanded and collapsed states -->
+      <div :class="['mx-auto mb-4', isSidebarOpen ? 'ml-4 mr-auto' : '']">
         <ThemeToggle />
       </div>
     </aside>

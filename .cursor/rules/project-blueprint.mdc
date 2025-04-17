@@ -17,6 +17,7 @@ alwaysApply: true
 
 ## Style Guidelines:
 
+- Mobile-view first design and layout ( This application needs to be usable on both Mobile and Tablet devices! )
 - Primary color: Calm blue (#42A5F5) to promote relaxation.
 - Secondary color: Soft gray (#E0E0E0) for backgrounds and neutral elements.
 - Accent color: Teal (#26A69A) for interactive elements and highlights.

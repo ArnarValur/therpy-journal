@@ -17,6 +17,8 @@ logs
 .DS_Store
 .fleet
 .idea
+.project-therapy-journal
+.cursor
 
 # Local env files
 .env
