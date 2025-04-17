@@ -429,9 +429,6 @@ watch(() => props.isOpen, (isOpen) => {
             <div class="space-y-4">
               <h3 class="text-base font-medium border-b pb-2 dark:border-gray-700 text-gray-800 dark:text-gray-200">Email Address</h3>
               <div>
-                <label for="new-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email Address
-                </label>
                 <input
                   id="new-email"
                   v-model="newEmail"
@@ -484,10 +481,7 @@ watch(() => props.isOpen, (isOpen) => {
             </div>
             
             <!-- Divider -->
-            <div class="flex items-center my-2">
-              <div class="flex-grow h-px bg-gray-200 dark:bg-gray-700" />
-            </div>
-            
+
             <!-- Password section -->
             <div class="space-y-4">
               <h3 class="text-base font-medium border-b pb-2 dark:border-gray-700 text-gray-800 dark:text-gray-200">Password</h3>
