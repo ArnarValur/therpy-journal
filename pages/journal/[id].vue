@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue';
 
-import CancelButton from '~/components/button/CancelButton.vue';
+import BackButton from '~/components/button/BackButton.vue';
 
 // Get required composables
 const { loadEntry, entry, isLoading, error } = useJournalEntry();
@@ -73,13 +73,13 @@ const handleBackToList = () => {
     <div class="flex items-center justify-between mb-6">
       <h1 class=""/>
       <div class="flex gap-3">
-        <CancelButton 
-          class=""
+        <BackButton 
+          class="bg-blue-500"
           @click="handleBackToList"
         >
           <i class="ri-arrow-left-line mr-2" />
           Back
-        </CancelButton>
+        </BackButton>
       </div>
     </div>
 
