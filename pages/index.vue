@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
+import EntryButton from '~/components/button/EntryButton.vue';
 
 definePageMeta({
   layout: 'default',
   middleware: ['auth']
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const authStore = useAuthStore();
+const router = useRouter();
 
 // Mock data for recent entries
 const recentEntries = ref([
@@ -40,20 +43,28 @@ const _sentimentData = {
   neutral: 8,
   negative: 5
 };
+
+// Handle new journal entry creation
+const handleNewEntry = () => {
+  router.push('/journal/new');
+};
 </script>
 
 <template>
   <div class="space-y-6 sm:space-y-8 p-4 sm:p-6 bg-gray-50 dark:bg-transparent rounded-lg">
+    
     <!-- Header section with welcome and new entry button -->
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
       <div>
-        <h1 class="text-xl sm:text-2xl font-bold dark:text-white">Dashboard</h1>
-        <p class="dark:text-gray-300 text-sm sm:text-base">Welcome, {{ authStore.user?.name || 'User' }}!</p>
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Dashboard</h1>
       </div>
-      <button class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors w-full sm:w-auto flex items-center justify-center" to="/journal/new">
+      <EntryButton 
+        class="text-white"
+        @click="handleNewEntry"
+      >
         <i class="ri-add-line mr-2" />
         New Entry
-      </button>
+      </EntryButton>
     </div>
 
     <!-- Stats cards -->
@@ -61,7 +72,7 @@ const _sentimentData = {
       <div class="rounded-lg shadow-md bg-white dark:bg-gray-800 p-4 sm:p-6 border border-gray-100 dark:border-gray-700">
         <div class="flex justify-between items-center mb-2 sm:mb-4">
           <h3 class="text-base sm:text-lg font-medium dark:text-white">Total Entries</h3>
-          <i class="ri-book-2-line text-[#42A5F5] text-xl" />
+          <i class="ri-book-2-line text-blue-500 text-xl" />
         </div>
         <p class="text-2xl sm:text-3xl font-bold dark:text-white">25</p>
         <p class="text-xs sm:text-sm mt-1 text-gray-600 dark:text-gray-400">Last entry 2 days ago</p>
@@ -115,7 +126,7 @@ const _sentimentData = {
         </div>
       </div>
       <div class="border-t dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4">
-        <NuxtLink to="/journal" class="text-[#42A5F5] hover:text-[#2196F3] dark:text-blue-400 dark:hover:text-blue-300 hover:underline flex items-center text-sm sm:text-base">
+        <NuxtLink to="/journal" class="text-blue-500 hover:text-[#2196F3] dark:text-blue-400 dark:hover:text-blue-300 hover:underline flex items-center text-sm sm:text-base">
           View all entries
           <i class="ri-arrow-right-line ml-1" />
         </NuxtLink>

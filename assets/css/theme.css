@@ -2,7 +2,7 @@
 
 :root {
   /* Primary colors */
-  --color-primary: #42A5F5;
+  --color-primary: #3B82F6;
   --color-primary-light: #90CAF9;
   --color-primary-dark: #2196F3;
   
@@ -38,7 +38,7 @@
   --color-success: #4CAF50;
   --color-warning: #FFC107;
   --color-error: #F44336;
-  --color-info: #2196F3;
+  --color-info: #3B82F6;
 }
 
 /* Dark mode variables */
@@ -80,5 +80,5 @@
   --color-success: #66BB6A;
   --color-warning: #FFCA28;
   --color-error: #EF5350;
-  --color-info: #42A5F5;
+  --color-info: #3B82F6;
 } 

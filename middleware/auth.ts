@@ -13,15 +13,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   const authStore = useAuthStore();
+  const { $routes, $getPublicRoutes } = useNuxtApp();
   
   // Public routes that don't require authentication
-  const publicRoutes = [
-    '/login', 
-    '/register', 
-    '/forgot-password', 
-    '/reset-password',
-    '/auth/callback'
-  ];
+  const publicRoutes = $getPublicRoutes();
   
   // Check if the route is one of our public routes
   const isPublicRoute = publicRoutes.some(route => 
@@ -58,12 +53,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     console.log('Redirecting unauthenticated user to login');
     
     // Store the intended destination to redirect after login
-    if (to.fullPath !== '/') {
+    if (to.fullPath !== $routes.HOME) {
       sessionStorage.setItem('authRedirect', to.fullPath);
     }
     
     return navigateTo({
-      path: '/login',
+      path: $routes.AUTH.LOGIN,
       query: { 
         redirect: 'auth_required',
         message: 'Please log in to access this page'
@@ -72,13 +67,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // If user is logged in and trying to access auth pages
-  if (authStore.isLoggedIn && (to.path === '/login' || to.path === '/register')) {
+  if (authStore.isLoggedIn && (to.path === $routes.AUTH.LOGIN || to.path === $routes.AUTH.REGISTER)) {
     console.log('Redirecting authenticated user to dashboard');
-    return navigateTo('/');
+    return navigateTo($routes.HOME);
   }
   
   // Check if there's a stored redirect path after successful authentication
-  if (authStore.isLoggedIn && to.path === '/' && import.meta.client) {
+  if (authStore.isLoggedIn && to.path === $routes.HOME && import.meta.client) {
     const redirectPath = sessionStorage.getItem('authRedirect');
     if (redirectPath) {
       sessionStorage.removeItem('authRedirect');

@@ -366,28 +366,28 @@ watch(() => props.isOpen, (isOpen) => {
           <div class="border-b dark:border-gray-700 overflow-x-auto pb-1 flex whitespace-nowrap -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex sm:justify-between sm:whitespace-normal">
             <button
               class="py-2 px-3 sm:px-4 text-sm font-medium flex-1"
-              :class="activeTab === 'profile' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
+              :class="activeTab === 'profile' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500 dark:text-gray-400'"
               @click="activeTab = 'profile'"
             >
               Profile
             </button>
             <button
               class="py-2 px-3 sm:px-4 text-sm font-medium flex-1"
-              :class="activeTab === 'account' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
+              :class="activeTab === 'account' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500 dark:text-gray-400'"
               @click="activeTab = 'account'"
             >
               Account
             </button>
             <button
               class="py-2 px-3 sm:px-4 text-sm font-medium flex-1"
-              :class="activeTab === 'photo' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
+              :class="activeTab === 'photo' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500 dark:text-gray-400'"
               @click="activeTab = 'photo'"
             >
               Photo
             </button>
             <button
               class="py-2 px-3 sm:px-4 text-sm font-medium flex-1"
-              :class="activeTab === 'theme' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
+              :class="activeTab === 'theme' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500 dark:text-gray-400'"
               @click="activeTab = 'theme'"
             >
               Theme
@@ -404,7 +404,7 @@ watch(() => props.isOpen, (isOpen) => {
                 id="display-name"
                 v-model="displayName"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] dark:bg-gray-700 dark:text-white"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 placeholder="Your name"
               >
             </div>
@@ -433,7 +433,7 @@ watch(() => props.isOpen, (isOpen) => {
                   id="new-email"
                   v-model="newEmail"
                   type="email"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] dark:bg-gray-700 dark:text-white"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                   placeholder="your.email@example.com"
                 >
               </div>
@@ -453,7 +453,7 @@ watch(() => props.isOpen, (isOpen) => {
                     id="current-password-email"
                     v-model="currentPasswordForEmail"
                     :type="showEmailPassword ? 'text' : 'password'"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] pr-10 dark:bg-gray-700 dark:text-white"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10 dark:bg-gray-700 dark:text-white"
                     placeholder="Enter your current password"
                   >
                   <button
@@ -510,7 +510,7 @@ watch(() => props.isOpen, (isOpen) => {
                       id="current-password"
                       v-model="currentPassword"
                       :type="showCurrentPassword ? 'text' : 'password'"
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] pr-10 dark:bg-gray-700 dark:text-white"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10 dark:bg-gray-700 dark:text-white"
                       placeholder="Enter your current password"
                     >
                     <button
@@ -531,7 +531,7 @@ watch(() => props.isOpen, (isOpen) => {
                       id="new-password"
                       v-model="newPassword"
                       :type="showNewPassword ? 'text' : 'password'"
-                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] pr-10 dark:bg-gray-700 dark:text-white"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10 dark:bg-gray-700 dark:text-white"
                       placeholder="Enter new password"
                     >
                     <button
@@ -551,7 +551,7 @@ watch(() => props.isOpen, (isOpen) => {
                     id="confirm-password"
                     v-model="confirmNewPassword"
                     :type="showNewPassword ? 'text' : 'password'"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] dark:bg-gray-700 dark:text-white"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Confirm new password"
                   >
                 </div>
@@ -583,7 +583,7 @@ watch(() => props.isOpen, (isOpen) => {
                 id="photo-url"
                 v-model="photoURL"
                 type="text"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] dark:bg-gray-700 dark:text-white"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                 placeholder="https://example.com/your-photo.jpg"
                 >
             </div>
@@ -632,7 +632,7 @@ watch(() => props.isOpen, (isOpen) => {
               >
               
               <!-- Upload button -->
-              <div class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md hover:border-[#42A5F5] transition-colors cursor-pointer" @click="triggerFileUpload">
+              <div class="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-md hover:border-blue-500 transition-colors cursor-pointer" @click="triggerFileUpload">
                 <i class="ri-upload-cloud-line text-3xl text-gray-400 dark:text-gray-500 mb-2" />
                 <p class="text-sm text-gray-500 dark:text-gray-400">Click to select an image</p>
                 <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">PNG, JPG, GIF up to 5MB</p>
@@ -642,7 +642,7 @@ watch(() => props.isOpen, (isOpen) => {
               <div v-if="isUploading" class="mt-2">
                 <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                   <div
-                    class="bg-[#42A5F5] h-2.5 rounded-full transition-all duration-300"
+                    class="bg-blue-500 h-2.5 rounded-full transition-all duration-300"
                     :style="{ width: `${uploadProgress}%` }"
                   />
                 </div>

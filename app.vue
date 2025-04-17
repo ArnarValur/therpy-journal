@@ -90,7 +90,6 @@ onMounted(async () => {
 
 <template>
   <!-- Rely on Nuxt color mode to handle the dark class automatically -->
-  <div>
     <!-- Only show global loading when user is not logged in and still loading -->
     <GlobalLoading v-if="!authStore.user && !showContent" />
     <ErrorToast />
@@ -110,7 +109,6 @@ onMounted(async () => {
     <div v-if="isDev" class="fixed bottom-2 right-2 text-xs py-1 px-2 bg-opacity-70 rounded theme-debug">
       Theme: {{ $colorMode.preference }} ({{ $colorMode.value }})
     </div>
-  </div>
 </template>
 
 <style scoped>

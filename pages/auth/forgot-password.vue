@@ -43,7 +43,7 @@ const onSubmit = async () => {
 
     <div v-if="isSubmitted" class="bg-green-50 dark:bg-green-900 text-green-600 dark:text-green-200 p-4 rounded text-center">
       <p>If an account exists with this email, you will receive a password reset link.</p>
-      <NuxtLink to="/login" class="block mt-4 text-blue-500 dark:text-blue-400 hover:underline">
+      <NuxtLink to="/auth/login" class="block mt-4 text-blue-500 dark:text-blue-400 hover:underline">
         Return to login
       </NuxtLink>
     </div>
@@ -74,7 +74,7 @@ const onSubmit = async () => {
       </form>
       
       <div class="text-center text-sm pt-4 text-gray-600 dark:text-gray-300">
-        <NuxtLink to="/login" class="text-blue-500 dark:text-blue-400 hover:underline">
+        <NuxtLink to="/auth/login" class="text-blue-500 dark:text-blue-400 hover:underline">
           Back to login
         </NuxtLink>
       </div>

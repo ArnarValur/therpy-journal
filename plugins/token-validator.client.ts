@@ -11,6 +11,7 @@ export default defineNuxtPlugin({
   async setup() {
     const authStore = useAuthStore();
     const { isTokenValid } = useFirebaseAuth();
+    const { $routes } = useNuxtApp();
     
     // Token validation interval in milliseconds (15 minutes)
     const VALIDATION_INTERVAL = 15 * 60 * 1000;
@@ -38,7 +39,7 @@ export default defineNuxtPlugin({
         // Redirect to login page with message
         const router = useRouter();
         await router.push({
-          path: '/login',
+          path: $routes.AUTH.LOGIN,
           query: { 
             reason: 'session-expired', 
             message: 'Your session has expired. Please log in again.' 

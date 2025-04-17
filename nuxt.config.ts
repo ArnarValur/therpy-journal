@@ -7,7 +7,8 @@ export default defineNuxtConfig({
     'reka-ui/nuxt',
     '@nuxtjs/tailwindcss',
     '@nuxt/eslint',
-    '@nuxtjs/color-mode'
+    '@nuxtjs/color-mode',
+    'nuxt-tiptap-editor'
   ],
   colorMode: {
     preference: 'system', // default value of $colorMode.preference

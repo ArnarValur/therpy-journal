@@ -76,7 +76,7 @@ onMounted(() => {
         ]"
         @click="selectTheme(option.value)"
       >
-        <i :class="[option.icon, 'text-2xl mb-2']" aria-hidden="true"></i>
+        <i :class="[option.icon, 'text-2xl mb-2']" aria-hidden="true" />
         <span class="text-sm">{{ option.label }}</span>
       </button>
     </div>
