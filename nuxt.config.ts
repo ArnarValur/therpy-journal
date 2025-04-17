@@ -26,7 +26,8 @@ export default defineNuxtConfig({
         { name: 'description', content: 'A secure journal system for therapy' }
       ],
       link: [
-        { rel: 'icon', type: 'image/png', href: '/favicon.png' }
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+        { rel: 'shortcut icon', href: '/favicon.ico' }
       ]
     }
   },

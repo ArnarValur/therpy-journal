@@ -7,10 +7,10 @@ import { useAuthStore } from '~/stores/auth';
 export default defineNuxtRouteMiddleware(async (to) => {
   // Skip auth check on server side - we'll handle auth purely on client side
   // This prevents the server from redirecting (which causes a flash of login page)
-  if (import.meta.server) {
+  /*if (import.meta.server) {
     console.log('Skipping auth check on server side');
     return;
-  }
+  }*/
 
   const authStore = useAuthStore();
   
@@ -55,7 +55,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   
   // If user is not logged in and trying to access a protected route
   if (!authStore.isLoggedIn && !isPublicRoute) {
-    console.log('Redirecting unauthenticated user to login');
     
     // Store the intended destination to redirect after login
     if (to.fullPath !== '/') {
@@ -65,8 +64,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo({
       path: '/login',
       query: { 
-        redirect: 'auth_required',
-        message: 'Please log in to access this page'
+        redirect: 'auth_required'
       }
     });
   }
