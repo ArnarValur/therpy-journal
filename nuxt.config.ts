@@ -12,8 +12,13 @@ export default defineNuxtConfig({
   colorMode: {
     preference: 'system', // default value of $colorMode.preference
     fallback: 'light', // fallback value if not system preference found
-    classSuffix: '', // Use this format for tailwind: 'dark' instead of 'dark-mode'
-    storage: 'localStorage' // Use local storage for persistence
+    hid: 'nuxt-color-mode-script',
+    globalName: '__NUXT_COLOR_MODE__',
+    componentName: 'ColorScheme',
+    classPrefix: '',
+    classSuffix: '',
+    storage: 'localStorage', // or 'sessionStorage' or 'cookie'
+    storageKey: 'nuxt-color-mode'
   },
   css: [
     'remixicon/fonts/remixicon.css',
@@ -26,7 +31,8 @@ export default defineNuxtConfig({
         { name: 'description', content: 'A secure journal system for therapy' }
       ],
       link: [
-        { rel: 'icon', type: 'image/png', href: '/favicon.png' }
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+        { rel: 'shortcut icon', href: '/favicon.ico' }
       ]
     }
   },

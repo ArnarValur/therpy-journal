@@ -314,17 +314,17 @@ watch(() => props.isOpen, (isOpen) => {
   <Teleport to="body">
     <div
       v-if="isOpen"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-1 sm:p-4"
       @click="handleClickOutside"
     >
       <div
         ref="modalContent"
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-auto"
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-[95%] sm:w-full max-w-md max-h-[95vh] overflow-auto"
       >
-        <div class="p-3 sm:p-4 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+        <div class="p-2 sm:p-4 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
           <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Account Settings</h3>
           <button
-            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
             @click="closeModal"
             aria-label="Close settings"
           >
@@ -332,7 +332,7 @@ watch(() => props.isOpen, (isOpen) => {
           </button>
         </div>
 
-        <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div class="p-3 sm:p-6 space-y-3 sm:space-y-6">
           <!-- Success message -->
           <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-200 p-3 rounded-md text-sm">
             {{ successMessage }}
@@ -344,8 +344,8 @@ watch(() => props.isOpen, (isOpen) => {
           </div>
 
           <!-- Profile picture -->
-          <div class="flex flex-col items-center justify-center py-4">
-            <div class="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-full mb-3 flex items-center justify-center overflow-hidden">
+          <div class="flex flex-col items-center justify-center py-2 sm:py-4">
+            <div class="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 dark:bg-gray-700 rounded-full mb-2 sm:mb-3 flex items-center justify-center overflow-hidden">
               <img
                 v-if="user?.photoURL"
                 :src="user.photoURL"
@@ -362,38 +362,31 @@ watch(() => props.isOpen, (isOpen) => {
             </p>
           </div>
 
-          <!-- Settings tabs -->
-          <div class="border-b dark:border-gray-700 flex">
+          <!-- Settings tabs - scrollable on mobile, now with Account instead of Email and Password -->
+          <div class="border-b dark:border-gray-700 overflow-x-auto pb-1 flex whitespace-nowrap -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex sm:justify-between sm:whitespace-normal">
             <button
-              class="py-2 px-4 text-sm font-medium"
+              class="py-2 px-3 sm:px-4 text-sm font-medium flex-1"
               :class="activeTab === 'profile' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
               @click="activeTab = 'profile'"
             >
               Profile
             </button>
             <button
-              class="py-2 px-4 text-sm font-medium"
-              :class="activeTab === 'email' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
-              @click="activeTab = 'email'"
+              class="py-2 px-3 sm:px-4 text-sm font-medium flex-1"
+              :class="activeTab === 'account' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
+              @click="activeTab = 'account'"
             >
-              Email
+              Account
             </button>
             <button
-              class="py-2 px-4 text-sm font-medium"
-              :class="activeTab === 'password' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
-              @click="activeTab = 'password'"
-            >
-              Password
-            </button>
-            <button
-              class="py-2 px-4 text-sm font-medium"
+              class="py-2 px-3 sm:px-4 text-sm font-medium flex-1"
               :class="activeTab === 'photo' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
               @click="activeTab = 'photo'"
             >
               Photo
             </button>
             <button
-              class="py-2 px-4 text-sm font-medium"
+              class="py-2 px-3 sm:px-4 text-sm font-medium flex-1"
               :class="activeTab === 'theme' ? 'border-b-2 border-[#42A5F5] text-[#42A5F5]' : 'text-gray-500 dark:text-gray-400'"
               @click="activeTab = 'theme'"
             >
@@ -430,148 +423,153 @@ watch(() => props.isOpen, (isOpen) => {
             </div>
           </div>
 
-          <!-- Email tab -->
-          <div v-if="activeTab === 'email'" class="space-y-4">
-            <div>
-              <label for="new-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email Address
-              </label>
-              <input
-                id="new-email"
-                v-model="newEmail"
-                type="email"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] dark:bg-gray-700 dark:text-white"
-                placeholder="your.email@example.com"
-              >
-            </div>
-            
-            <!-- Show this for Google sign-in users -->
-            <div v-if="isGoogleUser" class="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-200 p-3 rounded">
-              You're signed in with Google. You will be prompted to re-authenticate with Google when changing your email.
-            </div>
-            
-            <!-- Only show password field for non-Google users -->
-            <div v-else class="relative">
-              <label for="current-password-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Current Password
-              </label>
-              <div class="relative">
+          <!-- Account tab (combining Email and Password) -->
+          <div v-if="activeTab === 'account'" class="space-y-6">
+            <!-- Email section -->
+            <div class="space-y-4">
+              <h3 class="text-base font-medium border-b pb-2 dark:border-gray-700 text-gray-800 dark:text-gray-200">Email Address</h3>
+              <div>
                 <input
-                  id="current-password-email"
-                  v-model="currentPasswordForEmail"
-                  :type="showEmailPassword ? 'text' : 'password'"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] pr-10 dark:bg-gray-700 dark:text-white"
-                  placeholder="Enter your current password"
+                  id="new-email"
+                  v-model="newEmail"
+                  type="email"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] dark:bg-gray-700 dark:text-white"
+                  placeholder="your.email@example.com"
                 >
-                <button
-                  type="button"
-                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  @click="showEmailPassword = !showEmailPassword"
-                >
-                  <i :class="showEmailPassword ? 'ri-eye-off-line' : 'ri-eye-line'" />
-                </button>
               </div>
-            </div>
-            <div class="flex justify-end">
-              <button
-                type="button"
-                class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                :disabled="isLoading"
-                @click="updateEmail"
-              >
-                <span v-if="isLoading" class="mr-2">
-                  <i class="ri-loader-4-line animate-spin" />
-                </span>
-                Update Email
-              </button>
-            </div>
-          </div>
-
-          <!-- Password tab -->
-          <div v-if="activeTab === 'password'" class="space-y-4">
-            <!-- Show message for Google sign-in users -->
-            <div v-if="isGoogleUser" class="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-200 p-3 rounded">
-              Password change is not available for Google sign-in users. 
-              If you need to change your Google account password, please visit 
-              <a 
-                href="https://myaccount.google.com/signinoptions/password" 
-                target="_blank" 
-                class="underline font-medium hover:text-blue-800 dark:hover:text-blue-300"
-              >
-                Google Account Settings
-              </a>.
-            </div>
-            
-            <!-- Only show password fields for non-Google users -->
-            <template v-else>
-              <div class="relative">
-                <label for="current-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              
+              <!-- Show this for Google sign-in users -->
+              <div v-if="isGoogleUser" class="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-200 p-3 rounded">
+                You're signed in with Google. You will be prompted to re-authenticate with Google when changing your email.
+              </div>
+              
+              <!-- Only show password field for non-Google users -->
+              <div v-else class="relative">
+                <label for="current-password-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Current Password
                 </label>
                 <div class="relative">
                   <input
-                    id="current-password"
-                    v-model="currentPassword"
-                    :type="showCurrentPassword ? 'text' : 'password'"
+                    id="current-password-email"
+                    v-model="currentPasswordForEmail"
+                    :type="showEmailPassword ? 'text' : 'password'"
                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] pr-10 dark:bg-gray-700 dark:text-white"
                     placeholder="Enter your current password"
                   >
                   <button
                     type="button"
                     class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    @click="showCurrentPassword = !showCurrentPassword"
+                    @click="showEmailPassword = !showEmailPassword"
                   >
-                    <i :class="showCurrentPassword ? 'ri-eye-off-line' : 'ri-eye-line'" />
+                    <i :class="showEmailPassword ? 'ri-eye-off-line' : 'ri-eye-line'" />
                   </button>
                 </div>
-              </div>
-              <div class="relative">
-                <label for="new-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  New Password
-                </label>
-                <div class="relative">
-                  <input
-                    id="new-password"
-                    v-model="newPassword"
-                    :type="showNewPassword ? 'text' : 'password'"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] pr-10 dark:bg-gray-700 dark:text-white"
-                    placeholder="Enter new password"
-                  >
-                  <button
-                    type="button"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    @click="showNewPassword = !showNewPassword"
-                  >
-                    <i :class="showNewPassword ? 'ri-eye-off-line' : 'ri-eye-line'" />
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label for="confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Confirm New Password
-                </label>
-                <input
-                  id="confirm-password"
-                  v-model="confirmNewPassword"
-                  :type="showNewPassword ? 'text' : 'password'"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] dark:bg-gray-700 dark:text-white"
-                  placeholder="Confirm new password"
-                >
               </div>
               <div class="flex justify-end">
                 <button
                   type="button"
                   class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   :disabled="isLoading"
-                  @click="updatePassword"
+                  @click="updateEmail"
                 >
                   <span v-if="isLoading" class="mr-2">
                     <i class="ri-loader-4-line animate-spin" />
                   </span>
-                  Update Password
+                  Update Email
                 </button>
               </div>
-            </template>
+            </div>
+            
+            <!-- Divider -->
+
+            <!-- Password section -->
+            <div class="space-y-4">
+              <h3 class="text-base font-medium border-b pb-2 dark:border-gray-700 text-gray-800 dark:text-gray-200">Password</h3>
+              
+              <!-- Show message for Google sign-in users -->
+              <div v-if="isGoogleUser" class="text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-200 p-3 rounded">
+                Password change is not available for Google sign-in users. 
+                If you need to change your Google account password, please visit 
+                <a 
+                  href="https://myaccount.google.com/signinoptions/password" 
+                  target="_blank" 
+                  class="underline font-medium hover:text-blue-800 dark:hover:text-blue-300"
+                >
+                  Google Account Settings
+                </a>.
+              </div>
+              
+              <!-- Only show password fields for non-Google users -->
+              <template v-else>
+                <div class="relative">
+                  <label for="current-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Current Password
+                  </label>
+                  <div class="relative">
+                    <input
+                      id="current-password"
+                      v-model="currentPassword"
+                      :type="showCurrentPassword ? 'text' : 'password'"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] pr-10 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter your current password"
+                    >
+                    <button
+                      type="button"
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      @click="showCurrentPassword = !showCurrentPassword"
+                    >
+                      <i :class="showCurrentPassword ? 'ri-eye-off-line' : 'ri-eye-line'" />
+                    </button>
+                  </div>
+                </div>
+                <div class="relative">
+                  <label for="new-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    New Password
+                  </label>
+                  <div class="relative">
+                    <input
+                      id="new-password"
+                      v-model="newPassword"
+                      :type="showNewPassword ? 'text' : 'password'"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] pr-10 dark:bg-gray-700 dark:text-white"
+                      placeholder="Enter new password"
+                    >
+                    <button
+                      type="button"
+                      class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      @click="showNewPassword = !showNewPassword"
+                    >
+                      <i :class="showNewPassword ? 'ri-eye-off-line' : 'ri-eye-line'" />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label for="confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Confirm New Password
+                  </label>
+                  <input
+                    id="confirm-password"
+                    v-model="confirmNewPassword"
+                    :type="showNewPassword ? 'text' : 'password'"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-[#42A5F5] focus:border-[#42A5F5] dark:bg-gray-700 dark:text-white"
+                    placeholder="Confirm new password"
+                  >
+                </div>
+                <div class="flex justify-end">
+                  <button
+                    type="button"
+                    class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    :disabled="isLoading"
+                    @click="updatePassword"
+                  >
+                    <span v-if="isLoading" class="mr-2">
+                      <i class="ri-loader-4-line animate-spin" />
+                    </span>
+                    Update Password
+                  </button>
+                </div>
+              </template>
+            </div>
           </div>
 
           <!-- Photo tab -->
@@ -656,24 +654,13 @@ watch(() => props.isOpen, (isOpen) => {
           <!-- Theme tab -->
           <div v-if="activeTab === 'theme'" class="space-y-4">
             <ThemeSelector />
-            
-            <div class="mt-6">
-              <h3 class="text-base font-medium mb-2 dark:text-white">Quick Toggle</h3>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                You can also quickly toggle between light and dark modes using this button:
-              </p>
-              <div class="flex items-center">
-                <ThemeToggle />
-                <span class="ml-3 text-sm dark:text-gray-300">Toggle dark/light mode</span>
-              </div>
-            </div>
           </div>
         </div>
 
-        <div class="px-6 py-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-lg">
+        <div class="px-3 sm:px-6 py-3 sm:py-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 rounded-b-lg">
           <button
             type="button"
-            class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            class="w-full inline-flex justify-center items-center px-3 py-2 sm:py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             @click="closeModal"
           >
             Close
@@ -688,7 +675,7 @@ watch(() => props.isOpen, (isOpen) => {
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]"
       @click.self="cancelRemovePhoto"
     >
-      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm mx-4">
+      <div class="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg w-[95%] sm:w-full max-w-sm mx-1 sm:mx-4">
         <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-3">Remove Profile Picture?</h3>
         <p class="mb-5 text-gray-600 dark:text-gray-300">Are you sure you want to remove your profile picture? This action cannot be undone.</p>
         <div class="flex justify-end space-x-3">
