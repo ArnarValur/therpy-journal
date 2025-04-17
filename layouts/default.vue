@@ -51,10 +51,10 @@ const handleNavigation = () => {
       <h1 class="font-bold primary-text">TherapyJournal</h1>
       <button
         class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        @click="toggleMobileMenu"
         aria-label="Toggle mobile menu"
+        @click="toggleMobileMenu"
       >
-        <i :class="['text-icon text-xl', isMobileMenuOpen ? 'ri-close-line' : 'ri-menu-line']"></i>
+        <i :class="['text-icon text-xl', isMobileMenuOpen ? 'ri-close-line' : 'ri-menu-line']" />
       </button>
     </header>
 
@@ -63,7 +63,7 @@ const handleNavigation = () => {
       v-if="isMobileMenuOpen" 
       class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
       @click="toggleMobileMenu"
-    ></div>
+    />
 
     <!-- Client-only sidebar to prevent SSR hydration issues -->
     <ClientOnly>
@@ -102,10 +102,10 @@ const handleNavigation = () => {
           <h1 class="font-bold primary-text">TherapyJournal</h1>
           <button
             class="p-2 rounded-md"
-            @click="toggleMobileMenu"
             aria-label="Close mobile menu"
+            @click="toggleMobileMenu"
           >
-            <i class="ri-close-line text-icon text-xl"></i>
+            <i class="ri-close-line text-icon text-xl" />
           </button>
         </div>
 
@@ -161,7 +161,7 @@ const handleNavigation = () => {
         </nav>
         <div class="sidebar-footer border-t pt-4 pb-4">
           <button 
-            class="w-full flex items-center px-4 py-2 logout-btn rounded-md transition-colors"
+            class="w-full flex items-center px-4 py-2 logout-btn transition-colors"
             :class="{ 'md:justify-center': !sidebarOpen }"
             :disabled="isLoggingOut"
             @click="confirmLogout"
@@ -175,7 +175,7 @@ const handleNavigation = () => {
         </div>
         
         <!-- Theme toggle in sidebar - works for both expanded and collapsed states -->
-        <div :class="['mx-auto mb-4', (sidebarOpen || isMobileMenuOpen) ? 'ml-4 mr-auto' : '']">
+        <div :class="['mx-auto mb-4', 'flex justify-center']">
           <ThemeToggle />
         </div>
       </aside>
