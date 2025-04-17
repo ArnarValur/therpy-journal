@@ -31,6 +31,9 @@ const onLogout = async () => {
 
 const openSettingsModal = () => {
   showSettingsModal.value = true;
+  if (isMobileMenuOpen.value) {
+    isMobileMenuOpen.value = false;
+  }
 };
 
 const closeSettingsModal = () => {
