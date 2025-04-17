@@ -1,0 +1,84 @@
+/* Theme CSS Variables */
+
+:root {
+  /* Primary colors */
+  --color-primary: #42A5F5;
+  --color-primary-light: #90CAF9;
+  --color-primary-dark: #2196F3;
+  
+  /* Secondary colors */
+  --color-secondary: #E0E0E0;
+  --color-secondary-light: #F5F5F5;
+  --color-secondary-dark: #9E9E9E;
+  
+  /* Accent colors */
+  --color-accent: #26A69A;
+  --color-accent-light: #80CBC4;
+  --color-accent-dark: #00897B;
+  
+  /* Background colors */
+  --color-background-primary: #FFFFFF;
+  --color-background-secondary: #F8F9FA;
+  --color-background-tertiary: #ECEFF1;
+  
+  /* Text colors */
+  --color-text-primary: rgba(0, 0, 0, 0.87);
+  --color-text-secondary: rgba(0, 0, 0, 0.6);
+  --color-text-disabled: rgba(0, 0, 0, 0.38);
+  
+  /* Border colors */
+  --color-border: #E0E0E0;
+  
+  /* Shadow */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  /* Success, warning, error, info colors */
+  --color-success: #4CAF50;
+  --color-warning: #FFC107;
+  --color-error: #F44336;
+  --color-info: #2196F3;
+}
+
+/* Dark mode variables */
+.dark {
+  /* Primary colors - slightly brighter in dark mode */
+  --color-primary: #64B5F6;
+  --color-primary-light: #90CAF9;
+  --color-primary-dark: #42A5F5;
+  
+  /* Secondary colors */
+  --color-secondary: #424242;
+  --color-secondary-light: #616161;
+  --color-secondary-dark: #212121;
+  
+  /* Accent colors - slightly brighter in dark mode */
+  --color-accent: #4DB6AC;
+  --color-accent-light: #80CBC4;
+  --color-accent-dark: #26A69A;
+  
+  /* Background colors */
+  --color-background-primary: #121212;
+  --color-background-secondary: #1E1E1E;
+  --color-background-tertiary: #2D2D2D;
+  
+  /* Text colors */
+  --color-text-primary: rgba(255, 255, 255, 0.87);
+  --color-text-secondary: rgba(255, 255, 255, 0.6);
+  --color-text-disabled: rgba(255, 255, 255, 0.38);
+  
+  /* Border colors */
+  --color-border: #424242;
+  
+  /* Shadow - darker and more pronounced in dark mode */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.18);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  
+  /* Success, warning, error, info colors - slightly muted in dark mode */
+  --color-success: #66BB6A;
+  --color-warning: #FFCA28;
+  --color-error: #EF5350;
+  --color-info: #42A5F5;
+} 
