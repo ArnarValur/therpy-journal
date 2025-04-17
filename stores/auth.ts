@@ -79,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Create base user object from Firebase Auth data
     const baseUser: User = {
       id: firebaseUser.uid,
-      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+      name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
       email: firebaseUser.email || '',
       photoURL: firebaseUser.photoURL || undefined
     };
@@ -100,6 +100,11 @@ export const useAuthStore = defineStore('auth', () => {
       // Use only Firebase Auth data and save it to Firestore
       user.value = baseUser;
       await saveUserToFirestore(baseUser);
+    }
+    
+    // Store authenticated user data in localStorage for faster loading on refresh
+    if (import.meta.client && user.value) {
+      localStorage.setItem('nuxt-auth-user', JSON.stringify(user.value));
     }
   };
 
@@ -260,34 +265,23 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = async () => {
     isLoading.value = true;
     error.value = null;
-
+    
     try {
       const { $firebaseAuth } = useNuxtApp();
-      
-      // Call Firebase signOut method
       await signOut($firebaseAuth);
       
-      // Clear user data from store
+      // Clear user data
       user.value = null;
       
-      // Clear any sensitive data from local storage if needed
-      localStorage.removeItem('user-session-data');
-      
-      // Clear any other auth-related state if needed
-      
-      // Return success for UI handling
-      return { success: true };
-    } catch (err) {
-      console.error('Logout error:', err);
-      
-      // Set appropriate error message
-      const firebaseError = err as AuthError;
-      if (firebaseError.code?.includes('network')) {
-        error.value = 'Network error during logout. You may still be logged in on the server.';
-      } else {
-        error.value = 'Failed to logout. Please try again.';
+      // Clear cached user data from localStorage
+      if (import.meta.client) {
+        localStorage.removeItem('nuxt-auth-user');
       }
       
+      return true;
+    } catch (err) {
+      console.error('Logout error:', err);
+      error.value = 'Failed to logout. Please try again.';
       throw err;
     } finally {
       isLoading.value = false;
@@ -355,6 +349,21 @@ export const useAuthStore = defineStore('auth', () => {
     // Set loading to true only if we're not already logged in
     if (!user.value) {
       isLoading.value = true;
+
+      // Check for cached user data in localStorage for immediate display
+      if (import.meta.client) {
+        try {
+          const cachedUser = localStorage.getItem('nuxt-auth-user');
+          if (cachedUser) {
+            // Use cached user data while we verify with Firebase
+            user.value = JSON.parse(cachedUser) as User;
+            console.log('[CLIENT] Using cached user data:', user.value.name);
+          }
+        } catch (err) {
+          console.error('[CLIENT] Error reading cached user data:', err);
+          // Continue with normal initialization if localStorage fails
+        }
+      }
     }
     
     const isServer = import.meta.server;
@@ -387,6 +396,13 @@ export const useAuthStore = defineStore('auth', () => {
         await setUserWithMergedData(currentUser);
         console.log(`${context} User already signed in:`, user.value?.name);
       } else {
+        // If we loaded a cached user but Firebase says we're not logged in,
+        // clear the cached user to prevent stale data
+        if (user.value && import.meta.client) {
+          console.log(`${context} Cached user found but Firebase says not logged in, clearing cache`);
+          user.value = null;
+          localStorage.removeItem('nuxt-auth-user');
+        }
         console.log(`${context} No user currently signed in`);
       }
       

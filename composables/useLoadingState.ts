@@ -11,13 +11,25 @@ export function useLoadingState() {
   
   // Loading message to display
   const loadingMessage = useState<string>('loading-message', () => '');
+  
+  // Track if we've already passed the initial load
+  // This helps avoid showing loaders on page refresh for logged-in users
+  const initialLoadComplete = useState('initial-load-complete', () => false);
 
   /**
    * Start a loading operation
    * @param key Unique identifier for the operation
    * @param message Optional message to display during loading
+   * @param forceShow Whether to show the loading indicator even after initial load
    */
-  const startLoading = (key: string, message?: string) => {
+  const startLoading = (key: string, message?: string, forceShow = false) => {
+    // Skip showing loaders for app initialization if initial load is complete
+    // unless forceShow is true (for operations that should always show a loader)
+    if (initialLoadComplete.value && key.startsWith('app-') && !forceShow) {
+      operations.value[key] = (operations.value[key] || 0) + 1;
+      return;
+    }
+    
     operations.value[key] = (operations.value[key] || 0) + 1;
     isLoading.value = true;
     
@@ -50,6 +62,11 @@ export function useLoadingState() {
     if (Object.keys(operations.value).length === 0) {
       isLoading.value = false;
       loadingMessage.value = '';
+      
+      // If we're completing app initialization, mark initial load as complete
+      if (key === 'app-initialization') {
+        initialLoadComplete.value = true;
+      }
     }
   };
 
@@ -58,9 +75,10 @@ export function useLoadingState() {
    * @param key Unique identifier for the operation
    * @param fn Function to run
    * @param message Optional message to display during loading
+   * @param forceShow Whether to show the loading indicator even after initial load
    */
-  const withLoading = async <T>(key: string, fn: () => Promise<T>, message?: string): Promise<T> => {
-    startLoading(key, message);
+  const withLoading = async <T>(key: string, fn: () => Promise<T>, message?: string, forceShow = false): Promise<T> => {
+    startLoading(key, message, forceShow);
     
     try {
       return await fn();
@@ -72,6 +90,7 @@ export function useLoadingState() {
   return {
     isLoading, 
     loadingMessage,
+    initialLoadComplete,
     startLoading,
     endLoading,
     withLoading

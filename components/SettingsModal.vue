@@ -314,24 +314,25 @@ watch(() => props.isOpen, (isOpen) => {
   <Teleport to="body">
     <div
       v-if="isOpen"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       @click="handleClickOutside"
     >
       <div
         ref="modalContent"
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-auto"
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-auto"
       >
-        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
-          <h3 class="text-lg font-medium text-gray-900 dark:text-white">Account Settings</h3>
+        <div class="p-3 sm:p-4 border-b dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+          <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Account Settings</h3>
           <button
             class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
             @click="closeModal"
+            aria-label="Close settings"
           >
             <i class="ri-close-line text-lg" />
           </button>
         </div>
 
-        <div class="p-6 space-y-6">
+        <div class="p-4 sm:p-6 space-y-4 sm:space-y-6">
           <!-- Success message -->
           <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-200 p-3 rounded-md text-sm">
             {{ successMessage }}
@@ -354,10 +355,10 @@ watch(() => props.isOpen, (isOpen) => {
               <i v-else class="ri-user-line text-3xl text-gray-400 dark:text-gray-500" />
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-300">
-              {{ user?.name || 'User' }}
+              {{ user?.name || '' }}
             </p>
             <p class="text-xs text-gray-400 dark:text-gray-500">
-              {{ user?.email || 'No email' }}
+              {{ user?.email || '' }}
             </p>
           </div>
 

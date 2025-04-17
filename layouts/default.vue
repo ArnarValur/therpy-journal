@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useLogout } from '~/composables/useLogout';
+import { useUserPreferences } from '~/composables/useUserPreferences';
 
-const isSidebarOpen = ref(true);
+// Get sidebar state from the user preferences composable
+const { sidebarOpen, toggleSidebar } = useUserPreferences();
+const isMobileMenuOpen = ref(false);
 const { logout, isLoggingOut } = useLogout();
 const showLogoutConfirm = ref(false);
 const showSettingsModal = ref(false);
 
-const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value;
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value;
 };
 
 const confirmLogout = () => {
@@ -33,113 +36,160 @@ const openSettingsModal = () => {
 const closeSettingsModal = () => {
   showSettingsModal.value = false;
 };
+
+const handleNavigation = () => {
+  if (isMobileMenuOpen.value) {
+    isMobileMenuOpen.value = false;
+  }
+};
 </script>
 
 <template>
-  <div class="min-h-screen app-bg flex">
-    <!-- Sidebar -->
-    <aside
-      :class="[
-        'sidebar transition-all duration-300 z-20 h-screen sticky top-0 flex flex-col',
-        isSidebarOpen ? 'w-64' : 'w-16'
-      ]"
-    >
-      <div class="flex items-center justify-between p-4 sidebar-header">
-        <h1 
-          :class="[
-            'font-bold primary-text transition-opacity duration-300',
-            isSidebarOpen ? 'opacity-100' : 'opacity-0 hidden'
-          ]"
-        >
-          TherapyJournal
-        </h1>
-        <button
-          variant="ghost"
-          size="sm"
-          :class="{ 'w-full flex justify-center': !isSidebarOpen }"
-          :aria-label="isSidebarOpen ? 'Close sidebar' : 'Open sidebar'"
-          @click="toggleSidebar"
-        >
-          <i :class="['text-icon', isSidebarOpen ? 'ri-menu-fold-line' : 'ri-menu-unfold-line']" />
-        </button>
-      </div>
-      <nav class="py-4 flex-grow">
-        <ul class="space-y-2">
-          <li>
-            <NuxtLink 
-              to="/" 
-              class="nav-link flex items-center px-4 py-2"
-              :class="{ 'justify-center': !isSidebarOpen }"
-              active-class="nav-link-active"
-            >
-              <i class="ri-dashboard-line text-lg" :class="isSidebarOpen ? 'mr-3' : ''" />
-              <span :class="{ 'hidden': !isSidebarOpen }">Dashboard</span>
-            </NuxtLink>
-          </li>
-          <li>
-            <NuxtLink 
-              to="/journal" 
-              class="nav-link flex items-center px-4 py-2"
-              :class="{ 'justify-center': !isSidebarOpen }"
-              active-class="nav-link-active"
-            >
-              <i class="ri-book-2-line text-lg" :class="isSidebarOpen ? 'mr-3' : ''" />
-              <span :class="{ 'hidden': !isSidebarOpen }">Journal</span>
-            </NuxtLink>
-          </li>
-          <li>
-            <NuxtLink 
-              to="/therapist" 
-              class="nav-link flex items-center px-4 py-2"
-              :class="{ 'justify-center': !isSidebarOpen }"
-              active-class="nav-link-active"
-            >
-              <i class="ri-user-heart-line text-lg" :class="isSidebarOpen ? 'mr-3' : ''" />
-              <span :class="{ 'hidden': !isSidebarOpen }">Therapist</span>
-            </NuxtLink>
-          </li>
-          <li>
-            <button 
-              class="w-full nav-link flex items-center px-4 py-2"
-              :class="{ 'justify-center': !isSidebarOpen }"
-              @click="openSettingsModal"
-            >
-              <i class="ri-settings-3-line text-lg" :class="isSidebarOpen ? 'mr-3' : ''" />
-              <span :class="{ 'hidden': !isSidebarOpen }">Settings</span>
-            </button>
-          </li>
-        </ul>
-      </nav>
-      <div class="sidebar-footer border-t pt-4 pb-4">
-        <button 
-          class="w-full flex items-center px-4 py-2 logout-btn rounded-md transition-colors"
-          :class="{ 'justify-center': !isSidebarOpen }"
-          :disabled="isLoggingOut"
-          @click="confirmLogout"
-        >
-          <i class="ri-logout-box-line" :class="isSidebarOpen ? 'mr-3' : ''" />
-          <span :class="{ 'hidden': !isSidebarOpen }">
-            <template v-if="isLoggingOut">Logging out...</template>
-            <template v-else>Logout</template>
-          </span>
-        </button>
-      </div>
-      
-      <!-- Theme toggle in sidebar - works for both expanded and collapsed states -->
-      <div :class="['mx-auto mb-4', isSidebarOpen ? 'ml-4 mr-auto' : '']">
-        <ThemeToggle />
-      </div>
-    </aside>
+  <div class="min-h-screen app-bg flex flex-col md:flex-row">
+    <!-- Mobile header - only visible on small screens -->
+    <header class="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-800 sticky top-0 z-30 shadow-md">
+      <h1 class="font-bold primary-text">TherapyJournal</h1>
+      <button
+        class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        @click="toggleMobileMenu"
+        aria-label="Toggle mobile menu"
+      >
+        <i :class="['text-icon text-xl', isMobileMenuOpen ? 'ri-close-line' : 'ri-menu-line']"></i>
+      </button>
+    </header>
 
-    <!-- Main content -->
-    <main class="flex-1 p-6 main-content">
+    <!-- Mobile sidebar overlay - only visible when menu is open -->
+    <div 
+      v-if="isMobileMenuOpen" 
+      class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+      @click="toggleMobileMenu"
+    ></div>
+
+    <!-- Client-only sidebar to prevent SSR hydration issues -->
+    <ClientOnly>
+      <aside
+        :class="[
+          'sidebar transition-all duration-300 z-50 h-screen flex flex-col',
+          'fixed left-0 top-0 md:sticky md:top-0',
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+          sidebarOpen ? 'md:w-64' : 'md:w-16',
+          'w-64 md:block'
+        ]"
+      >
+        <!-- Sidebar header - hidden on mobile -->
+        <div class="hidden md:flex items-center justify-between p-4 sidebar-header">
+          <h1 
+            :class="[
+              'font-bold primary-text transition-opacity duration-300',
+              sidebarOpen ? 'opacity-100' : 'opacity-0 hidden'
+            ]"
+          >
+            TherapyJournal
+          </h1>
+          <button
+            variant="ghost"
+            size="sm"
+            :class="{ 'w-full flex justify-center': !sidebarOpen }"
+            :aria-label="sidebarOpen ? 'Close sidebar' : 'Open sidebar'"
+            @click="toggleSidebar"
+          >
+            <i :class="['text-icon', sidebarOpen ? 'ri-menu-fold-line' : 'ri-menu-unfold-line']" />
+          </button>
+        </div>
+
+        <!-- Mobile sidebar header - only visible on mobile -->
+        <div class="flex md:hidden items-center justify-between p-4 sidebar-header">
+          <h1 class="font-bold primary-text">TherapyJournal</h1>
+          <button
+            class="p-2 rounded-md"
+            @click="toggleMobileMenu"
+            aria-label="Close mobile menu"
+          >
+            <i class="ri-close-line text-icon text-xl"></i>
+          </button>
+        </div>
+
+        <nav class="py-4 flex-grow">
+          <ul class="space-y-2">
+            <li>
+              <NuxtLink 
+                to="/" 
+                class="nav-link flex items-center px-4 py-2"
+                :class="{ 'md:justify-center': !sidebarOpen }"
+                active-class="nav-link-active"
+                @click="handleNavigation"
+              >
+                <i class="ri-dashboard-line text-lg" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
+                <span :class="{ 'md:hidden': !sidebarOpen }">Dashboard</span>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink 
+                to="/journal" 
+                class="nav-link flex items-center px-4 py-2"
+                :class="{ 'md:justify-center': !sidebarOpen }"
+                active-class="nav-link-active"
+                @click="handleNavigation"
+              >
+                <i class="ri-book-2-line text-lg" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
+                <span :class="{ 'md:hidden': !sidebarOpen }">Journal</span>
+              </NuxtLink>
+            </li>
+            <li>
+              <NuxtLink 
+                to="/therapist" 
+                class="nav-link flex items-center px-4 py-2"
+                :class="{ 'md:justify-center': !sidebarOpen }"
+                active-class="nav-link-active"
+                @click="handleNavigation"
+              >
+                <i class="ri-user-heart-line text-lg" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
+                <span :class="{ 'md:hidden': !sidebarOpen }">Therapist</span>
+              </NuxtLink>
+            </li>
+            <li>
+              <button 
+                class="w-full nav-link flex items-center px-4 py-2"
+                :class="{ 'md:justify-center': !sidebarOpen }"
+                @click="openSettingsModal"
+              >
+                <i class="ri-settings-3-line text-lg" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
+                <span :class="{ 'md:hidden': !sidebarOpen }">Settings</span>
+              </button>
+            </li>
+          </ul>
+        </nav>
+        <div class="sidebar-footer border-t pt-4 pb-4">
+          <button 
+            class="w-full flex items-center px-4 py-2 logout-btn rounded-md transition-colors"
+            :class="{ 'md:justify-center': !sidebarOpen }"
+            :disabled="isLoggingOut"
+            @click="confirmLogout"
+          >
+            <i class="ri-logout-box-line" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
+            <span :class="{ 'md:hidden': !sidebarOpen }">
+              <template v-if="isLoggingOut">Logging out...</template>
+              <template v-else>Logout</template>
+            </span>
+          </button>
+        </div>
+        
+        <!-- Theme toggle in sidebar - works for both expanded and collapsed states -->
+        <div :class="['mx-auto mb-4', (sidebarOpen || isMobileMenuOpen) ? 'ml-4 mr-auto' : '']">
+          <ThemeToggle />
+        </div>
+      </aside>
+    </ClientOnly>
+
+    <!-- Main content - adjusted for mobile header -->
+    <main class="flex-1 p-4 md:p-6 main-content mt-0 md:mt-0">
       <slot />
     </main>
 
     <!-- Logout confirmation dialog - overlays the entire screen -->
     <Teleport to="body">
       <div v-if="showLogoutConfirm" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50">
-        <div class="modal-card p-6 rounded-lg shadow-lg w-full max-w-md">
+        <div class="modal-card p-6 rounded-lg shadow-lg w-full max-w-md mx-4">
           <h3 class="text-lg font-medium mb-4">Confirm Logout</h3>
           <p class="mb-6 text-secondary">Are you sure you want to log out of your account?</p>
           <div class="flex justify-end space-x-3">
