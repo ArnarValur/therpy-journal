@@ -26,6 +26,10 @@ const onLogout = async () => {
   if (isLoggingOut.value) return;
   
   showLogoutConfirm.value = false;
+  // Close mobile menu if it's open
+  if (isMobileMenuOpen.value) {
+    isMobileMenuOpen.value = false;
+  }
   await logout();
 };
 
