@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
-
+import { onMounted, watch, onBeforeUnmount } from 'vue';
+import { useEditor, EditorContent } from '@tiptap/vue-3';
+import StarterKit from '@tiptap/starter-kit';
 import BackButton from '~/components/button/BackButton.vue';
 
 // Get required composables
 const { loadEntry, entry, isLoading, error } = useJournalEntry();
-const { sanitize } = useSanitize();
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
@@ -36,19 +36,34 @@ const getSentimentClass = (entry: JournalEntry | null) => {
   return 'bg-yellow-500';
 };
 
-// Sanitize and compute the HTML content
-const sanitizedContent = computed(() => {
-  if (!entry.value?.content) return '';
-  return sanitize(entry.value.content);
+// Create a read-only editor for content display
+const editor = useEditor({
+  content: '',
+  extensions: [StarterKit],
+  editable: false,
+});
+
+// Update editor content when entry changes
+watch(() => entry.value?.content, (newContent) => {
+  if (editor.value && newContent) {
+    editor.value.commands.setContent(newContent);
+  }
+}, { immediate: true });
+
+// Clean up editor on unmount
+onBeforeUnmount(() => {
+  if (editor.value) {
+    editor.value.destroy();
+  }
 });
 
 // Check if user is authenticated and load entry
 onMounted(async () => {
   if (!authStore.isLoggedIn) {
-    await router.push(useNuxtApp().$routes.AUTH.LOGIN);
+    router.push('/auth/login');
     return;
   }
-  
+
   const id = route.params.id as string;
   await loadEntry(id);
 });
@@ -132,7 +147,9 @@ const handleBackToList = () => {
         </div>
 
         <!-- Content -->
-        <div class="prose dark:prose-invert max-w-none" v-html="sanitizedContent" />
+        <div class="prose dark:prose-invert max-w-none">
+          <EditorContent :editor="editor" />
+        </div>
 
         <!-- Sentiments if present -->
         <div v-if="entry.sentiments && Object.keys(entry.sentiments).length > 0" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">

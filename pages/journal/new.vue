@@ -1,22 +1,25 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue';
-import { useEditor, EditorContent } from '@tiptap/vue-3';
+import { useEditor } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import { useNuxtApp } from '#app';
 import { useDebounceFn } from '@vueuse/core';
 
 import CancelButton from '~/components/button/CancelButton.vue';
 import SaveButton from '~/components/button/SaveButton.vue';
+import JournalEditor from '~/components/editor/JournalEditor.vue';
 
 // Get required composables
-const { createEntry, updateEntry, isLoading, error } = useJournalEntry();
+const { createEntry, updateEntry } = useJournalEntry();
 const authStore = useAuthStore();
 const router = useRouter();
 const { $routes } = useNuxtApp();
 
 // Journal entry state
+const isLoading = ref(false);
+const error = ref<string | null>(null);
 const title = ref('');
-const content = ref('');
+const content = ref<string | null>(null);
 const tags = ref<string[]>([]);
 const currentTag = ref('');
 const sentiments = ref<Record<string, number>>({});
@@ -30,7 +33,7 @@ const newSentimentName = ref('');
 
 // Form validation
 const isTitleValid = computed(() => title.value.trim().length > 0);
-const isContentValid = computed(() => content.value.trim().length > 0 || true); // Always valid to allow empty content
+const isContentValid = computed(() => Boolean(content.value?.length) || true); // Always valid to allow empty content
 const isFormValid = computed(() => isTitleValid.value && isContentValid.value);
 
 // Autosave status message
@@ -40,21 +43,31 @@ const autosaveStatus = computed(() => {
   return '';
 });
 
+// Handle editor content updates
+const handleEditorUpdate = (html: string) => {
+  content.value = html;
+  debouncedAutosave();
+};
+
 // Create a debounced autosave function
 const debouncedAutosave = useDebounceFn(async () => {
-  if (!title.value && !content.value) return; // Don't autosave if both title and content are empty
+  if (!title.value && !content.value) return;
   
   isAutosaving.value = true;
   
   try {
+    // Update sentiments object from sliders
+    const updatedSentiments = sentimentOptions.value.reduce((acc, sentiment) => {
+      acc[sentiment.key] = sentiment.value;
+      return acc;
+    }, {} as Record<string, number>);
+
     const entry = {
       title: title.value,
-      content: content.value,
-      tags: tags.value,
-      sentiments: sentimentOptions.value.reduce((acc, slider) => {
-        acc[slider.key] = slider.value;
-        return acc;
-      }, {} as Record<string, number>)
+      content: content.value || '<p></p>', // Use HTML content directly
+      tags: tags.value || [],
+      sentiments: updatedSentiments,
+      isDraft: true // Mark as draft when autosaving
     };
 
     if (draftId.value) {
@@ -62,10 +75,7 @@ const debouncedAutosave = useDebounceFn(async () => {
       await updateEntry(draftId.value, entry);
     } else {
       // Create new draft
-      const result = await createEntry({
-        ...entry,
-        isDraft: true // Add isDraft flag to indicate this is an autosaved draft
-      });
+      const result = await createEntry(entry);
       if (result?.id) {
         draftId.value = result.id;
       }
@@ -77,7 +87,7 @@ const debouncedAutosave = useDebounceFn(async () => {
   } finally {
     isAutosaving.value = false;
   }
-}, 2000); // Debounce for 2 seconds
+}, 2000);
 
 // TipTap editor configuration
 const editor = useEditor({
@@ -134,6 +144,14 @@ const handleTagKeydown = (event: KeyboardEvent) => {
   }
 };
 
+// Handle key press for custom feeling input
+const handleSentimentKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    addSentimentSlider();
+  }
+};
+
 // Add a new custom sentiment slider
 const addSentimentSlider = () => {
   const name = newSentimentName.value.trim();
@@ -184,7 +202,7 @@ const saveEntry = async () => {
 
   const entry = {
     title: title.value,
-    content: content.value,
+    content: content.value || '<p></p>', // Use HTML content directly
     tags: tags.value,
     sentiments: sentiments.value,
     isDraft: false // Mark as not a draft when explicitly saving
@@ -271,124 +289,11 @@ onBeforeUnmount(() => {
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Content
         </label>
-        <div class="border rounded-md dark:border-gray-700 overflow-hidden" :class="{ 'border-red-500': !isContentValid && editor }">
-          <!-- Editor toolbar -->
-          <div v-if="editor" class="flex flex-wrap gap-1 p-2 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('bold') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Bold"
-              type="button"
-              @click="editor.chain().focus().toggleBold().run()"
-            >
-              <i class="ri-bold" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('italic') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Italic"
-              type="button"
-              @click="editor.chain().focus().toggleItalic().run()"
-            >
-              <i class="ri-italic" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('strike') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Strike"
-              type="button"
-              @click="editor.chain().focus().toggleStrike().run()"
-            >
-              <i class="ri-strikethrough" />
-            </button>
-            <span class="border-r dark:border-gray-700 mx-1" />
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('paragraph') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Paragraph"
-              type="button"
-              @click="editor.chain().focus().setParagraph().run()"
-            >
-              <i class="ri-paragraph" />
-            </button>
-            <button
-            :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('heading', { level: 1 }) }"
-            class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            title="Heading 1"
-            type="button"
-            @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-            >
-              <i class="ri-h-1" />
-            </button>
-            <button
-            :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('heading', { level: 2 }) }"
-            class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            title="Heading 2"
-            type="button"
-            @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-            >
-              <i class="ri-h-2" />
-            </button>
-            <span class="border-r dark:border-gray-700 mx-1" />
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('bulletList') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Bullet List"
-              type="button"
-              @click="editor.chain().focus().toggleBulletList().run()"
-            >
-              <i class="ri-list-unordered" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('orderedList') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Ordered List"
-              type="button"
-              @click="editor.chain().focus().toggleOrderedList().run()"
-            >
-              <i class="ri-list-ordered" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('blockquote') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Blockquote"
-              type="button"
-              @click="editor.chain().focus().toggleBlockquote().run()"
-            >
-              <i class="ri-double-quotes-l" />
-            </button>
-            <span class="border-r dark:border-gray-700 mx-1" />
-            <button
-              :disabled="!editor.can().chain().focus().undo().run()"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
-              title="Undo"
-              type="button"
-              @click="editor.chain().focus().undo().run()"
-            >
-              <i class="ri-arrow-go-back-line" />
-            </button>
-            <button
-              :disabled="!editor.can().chain().focus().redo().run()"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
-              title="Redo"
-              type="button"
-              @click="editor.chain().focus().redo().run()"
-            >
-              <i class="ri-arrow-go-forward-line" />
-            </button>
-          </div>
-          
-          <!-- Editor content area -->
-          <EditorContent 
-            v-if="editor"
-            :editor="editor" 
-            class="prose dark:prose-invert max-w-none p-4 min-h-[250px]" 
-          />
-          <div v-else class="flex justify-center items-center min-h-[250px]">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400" />
-          </div>
-        </div>
-
+        <JournalEditor
+          :initial-content="content"
+          @update="handleEditorUpdate"
+        />
+        
         <!-- Autosave status -->
         <div 
           v-if="autosaveStatus" 
@@ -454,6 +359,7 @@ onBeforeUnmount(() => {
               type="text"
               placeholder="Add custom feeling"
               class="w-40 md:w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+              @keydown="handleSentimentKeydown"
             >
             <button 
               type="button"

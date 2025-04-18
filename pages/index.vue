@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import EntryButton from '~/components/button/EntryButton.vue';
 
@@ -28,6 +28,11 @@ const authStore = useAuthStore();
 
 // Get router
 const router = useRouter();
+
+// Filter out draft entries for the dashboard
+const publishedEntries = computed(() => {
+  return entries.value.filter(entry => !entry.isDraft);
+});
 
 // Function to strip HTML from journal entry content and get preview
 const getContentPreview = (content: string) => {
@@ -120,9 +125,10 @@ const handleNewEntry = () => {
       </div>
       <div class="divide-y dark:divide-gray-700">
         <div
-          v-for="entry in entries"
+          v-for="entry in publishedEntries"
           :key="entry.id"
           class="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+          @click="handleViewEntry(entry.id as string)"
         >
           <div class="flex items-start justify-between">
             <div class="flex-1 pr-3">

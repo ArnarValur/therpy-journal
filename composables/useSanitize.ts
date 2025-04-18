@@ -1,3 +1,4 @@
+// composables/useSanitize.ts
 import DOMPurify from 'dompurify';
 
 export function useSanitize() {

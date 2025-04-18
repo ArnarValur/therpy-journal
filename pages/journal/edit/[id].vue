@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue';
-import { useEditor, EditorContent } from '@tiptap/vue-3';
+import { useEditor } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '~/stores/auth';
@@ -10,6 +10,7 @@ import { useDebounceFn } from '@vueuse/core';
 
 import SaveButton from '~/components/button/SaveButton.vue';
 import CancelButton from '~/components/button/CancelButton.vue';
+import JournalEditor from '~/components/editor/JournalEditor.vue';
 
 // Get route and route params
 const route = useRoute();
@@ -23,10 +24,10 @@ const { $routes } = useNuxtApp();
 
 // Journal entry state
 const title = ref('');
-const content = ref('');
+const content = ref<string | null>(null);
 const tags = ref<string[]>([]);
-const currentTag = ref('');
 const sentiments = ref<Record<string, number>>({});
+const currentTag = ref('');
 const loadingEntry = ref(true);
 
 // Sentiment sliders (custom user-defined sliders)
@@ -46,26 +47,34 @@ const autosaveStatus = computed(() => {
 
 // Form validation
 const isTitleValid = computed(() => title.value.trim().length > 0);
-const isContentValid = computed(() => content.value.trim().length > 0 || true); // Always valid to allow empty content
+const isContentValid = computed(() => Boolean(content.value) || true); // Always valid to allow empty content
 const isFormValid = computed(() => isTitleValid.value && isContentValid.value);
+
+// Handle editor content updates
+const handleEditorUpdate = (html: string) => {
+  content.value = html;
+  debouncedAutosave();
+};
 
 // Create a debounced autosave function
 const debouncedAutosave = useDebounceFn(async () => {
-  if (!title.value && !content.value) return; // Don't autosave if both title and content are empty
+  if (!title.value && !content.value) return;
   
   isAutosaving.value = true;
   
   try {
     // Update sentiments object from sliders
-    sentimentOptions.value.forEach(sentiment => {
-      sentiments.value[sentiment.key] = sentiment.value;
-    });
+    const updatedSentiments = sentimentOptions.value.reduce((acc, sentiment) => {
+      acc[sentiment.key] = sentiment.value;
+      return acc;
+    }, {} as Record<string, number>);
 
     const updatedEntry = {
       title: title.value,
-      content: content.value,
-      tags: tags.value,
-      sentiments: sentiments.value
+      content: content.value || '<p></p>', // Use HTML content directly
+      tags: tags.value || [],
+      sentiments: updatedSentiments,
+      isDraft: true // Mark as draft when autosaving
     };
 
     await updateEntry(entryId.value, updatedEntry);
@@ -75,7 +84,7 @@ const debouncedAutosave = useDebounceFn(async () => {
   } finally {
     isAutosaving.value = false;
   }
-}, 2000); // Debounce for 2 seconds
+}, 2000);
 
 // TipTap editor configuration
 const editor = useEditor({
@@ -128,25 +137,23 @@ const loadJournalEntry = async () => {
     // Populate the form with entry data
     title.value = entry.title;
     content.value = entry.content;
-    tags.value = entry.tags || [];
-    sentiments.value = entry.sentiments || {};
     
     // Set editor content if editor is ready
     if (editor.value) {
       editor.value.commands.setContent(entry.content);
     }
     
+    tags.value = entry.tags || [];
+    sentiments.value = entry.sentiments || {};
+    
     // Transform sentiments into slider options
-    sentimentOptions.value = Object.entries(sentiments.value || {}).map(([key, value]) => ({
+    sentimentOptions.value = Object.entries(entry.sentiments || {}).map(([key, value]) => ({
       name: key.charAt(0).toUpperCase() + key.slice(1), // Capitalize first letter
       key,
-      value,
+      value: value as number,
       min: 0,
       max: 10
     }));
-    
-    // We no longer add default sentiments if none exist
-    // This allows entries to have no sentiment sliders if desired
   } catch (err) {
     console.error('Error loading journal entry:', err);
   } finally {
@@ -173,6 +180,14 @@ const handleTagKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Enter') {
     event.preventDefault();
     addTag();
+  }
+};
+
+// Handle key press for custom feeling input
+const handleSentimentKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    addSentimentSlider();
   }
 };
 
@@ -226,9 +241,10 @@ const saveEntry = async () => {
 
   const updatedEntry = {
     title: title.value,
-    content: content.value,
+    content: content.value || '<p></p>', // Use HTML content directly
     tags: tags.value,
-    sentiments: sentiments.value
+    sentiments: sentiments.value,
+    isDraft: false // Mark as not a draft when explicitly saving
   };
 
   const success = await updateEntry(entryId.value, updatedEntry);
@@ -309,124 +325,11 @@ onBeforeUnmount(() => {
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Content
         </label>
-        <div class="border rounded-md dark:border-gray-700 overflow-hidden" :class="{ 'border-red-500': !isContentValid && editor }">
-          <!-- Editor toolbar -->
-          <div v-if="editor" class="flex flex-wrap gap-1 p-2 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-            <button
-            :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('bold') }"
-            class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-            title="Bold"
-            type="button"
-            @click="editor.chain().focus().toggleBold().run()"
-            >
-              <i class="ri-bold" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('italic') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Italic"
-              type="button"
-              @click="editor.chain().focus().toggleItalic().run()"
-            >
-              <i class="ri-italic" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('strike') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Strike"
-              type="button"
-              @click="editor.chain().focus().toggleStrike().run()"
-            >
-              <i class="ri-strikethrough" />
-            </button>
-            <span class="border-r dark:border-gray-700 mx-1" />
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('paragraph') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Paragraph"
-              type="button"
-              @click="editor.chain().focus().setParagraph().run()"
-            >
-              <i class="ri-paragraph" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('heading', { level: 1 }) }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Heading 1"
-              type="button"
-              @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-            >
-              <i class="ri-h-1" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('heading', { level: 2 }) }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Heading 2"
-              type="button"
-              @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-            >
-              <i class="ri-h-2" />
-            </button>
-            <span class="border-r dark:border-gray-700 mx-1" />
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('bulletList') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Bullet List"
-              type="button"
-              @click="editor.chain().focus().toggleBulletList().run()"
-            >
-              <i class="ri-list-unordered" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('orderedList') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Ordered List"
-              type="button"
-              @click="editor.chain().focus().toggleOrderedList().run()"
-            >
-              <i class="ri-list-ordered" />
-            </button>
-            <button
-              :class="{ 'bg-blue-100 dark:bg-blue-900': editor.isActive('blockquote') }"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-              title="Blockquote"
-              type="button"
-              @click="editor.chain().focus().toggleBlockquote().run()"
-            >
-              <i class="ri-double-quotes-l" />
-            </button>
-            <span class="border-r dark:border-gray-700 mx-1" />
-            <button
-              :disabled="!editor.can().chain().focus().undo().run()"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
-              title="Undo"
-              type="button"
-              @click="editor.chain().focus().undo().run()"
-            >
-              <i class="ri-arrow-go-back-line" />
-            </button>
-            <button
-              :disabled="!editor.can().chain().focus().redo().run()"
-              class="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50"
-              title="Redo"
-              type="button"
-              @click="editor.chain().focus().redo().run()"
-            >
-              <i class="ri-arrow-go-forward-line" />
-            </button>
-          </div>
-          
-          <!-- Editor content area -->
-          <EditorContent 
-            v-if="editor"
-            :editor="editor" 
-            class="prose dark:prose-invert max-w-none p-4 min-h-[250px]" 
-          />
-          <div v-else class="flex justify-center items-center min-h-[250px]">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400" />
-          </div>
-        </div>
-
+        <JournalEditor
+          :initial-content="content"
+          @update="handleEditorUpdate"
+        />
+        
         <!-- Autosave status -->
         <div 
           v-if="autosaveStatus" 
@@ -480,7 +383,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Custom Sentiment sliders -->
-      <div v-if="sentimentOptions.length > 0" class="mb-6">
+      <div class="mb-6">
         <div class="flex items-center justify-between mb-3">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
             How are you feeling?
@@ -493,6 +396,7 @@ onBeforeUnmount(() => {
               type="text"
               placeholder="Add custom feeling"
               class="w-40 md:w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+              @keydown="handleSentimentKeydown"
             >
             <button 
               type="button"
@@ -505,13 +409,13 @@ onBeforeUnmount(() => {
           </div>
         </div>
         
-        <div class="space-y-4">
+        <div v-if="sentimentOptions.length > 0" class="space-y-4">
           <div v-for="sentiment in sentimentOptions" :key="sentiment.key" class="flex items-center">
             <div class="flex justify-between w-24 md:w-32">
               <span class="text-sm text-gray-600 dark:text-gray-400">{{ sentiment.name }}</span>
               <button 
-                class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none"
                 type="button"
+                class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 focus:outline-none"
                 title="Remove this slider"
                 @click="removeSentimentSlider(sentiment.key)" 
               >

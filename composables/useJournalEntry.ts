@@ -82,7 +82,8 @@ export function useJournalEntry() {
         updatedAt: now,
         userId: userId.value,
         tags: encryptedTags,
-        sentiments: encryptedSentiments
+        sentiments: encryptedSentiments,
+        isDraft: entry.isDraft ?? true // Default to true if not specified
       };
       
       const docRef = await addDoc(collection($firebaseDb, 'users', userId.value, 'journalEntries'), newEntry);
@@ -144,6 +145,11 @@ export function useJournalEntry() {
         updateData.sentiments = {
           data: encrypt(JSON.stringify(updates.sentiments))
         } as EncryptedSentiments;
+      }
+      
+      // Add isDraft field to updates if it's defined
+      if (updates.isDraft !== undefined) {
+        updateData.isDraft = updates.isDraft;
       }
       
       await updateDoc(entryRef, updateData);

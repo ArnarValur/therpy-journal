@@ -2,11 +2,9 @@
 import { onMounted, ref, computed } from 'vue';
 import EntryButton from '~/components/button/EntryButton.vue';
 import FilterButton from '~/components/button/FilterButton.vue';
-import { useSanitize } from '~/composables/useSanitize';
 
 // Get required composables
 const { loadEntries, entries, isLoading, error, deleteEntry } = useJournalEntry();
-const { sanitize } = useSanitize();
 
 // Get required stores
 const authStore = useAuthStore();
@@ -16,6 +14,7 @@ const router = useRouter();
 
 // Date filter state
 const dateFilter = ref('all');
+const showDrafts = ref(false);
 const customDateRange = ref({
   from: '',
   to: ''
@@ -54,22 +53,17 @@ const getDateDaysAgo = (days: number) => {
   return date;
 };
 
-// Function to strip HTML from journal entry content and get preview
-const getContentPreview = (content: string) => {
-  // First sanitize the HTML
-  const sanitizedHtml = sanitize(content);
-  // Create a temporary div to parse HTML and get text content
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = sanitizedHtml;
-  const textContent = tempDiv.textContent || tempDiv.innerText || '';
-  // Return truncated text
-  return textContent.substring(0, 200) + (textContent.length > 200 ? '...' : '');
-};
-
-// Filter entries by date
+// Filter entries by date and draft status
 const filteredEntries = computed(() => {
   if (!entries.value.length) return [];
   
+  // First filter by draft status if "Show Drafts" is active
+  let filtered = entries.value;
+  if (showDrafts.value) {
+    filtered = entries.value.filter(entry => entry.isDraft);
+  }
+  
+  // Then apply date filters
   let today: Date;
   let weekAgo: Date;
   let monthAgo: Date;
@@ -80,17 +74,17 @@ const filteredEntries = computed(() => {
     case 'today':
       today = new Date();
       today.setHours(0, 0, 0, 0);
-      return entries.value.filter(entry => 
+      return filtered.filter(entry => 
         entry.createdAt instanceof Date && entry.createdAt >= today
       );
     case 'week':
       weekAgo = getDateDaysAgo(7);
-      return entries.value.filter(entry => 
+      return filtered.filter(entry => 
         entry.createdAt instanceof Date && entry.createdAt >= weekAgo
       );
     case 'month':
       monthAgo = getDateDaysAgo(30);
-      return entries.value.filter(entry => 
+      return filtered.filter(entry => 
         entry.createdAt instanceof Date && entry.createdAt >= monthAgo
       );
     case 'custom':
@@ -102,13 +96,13 @@ const filteredEntries = computed(() => {
         const toDateCopy = new Date(toDate);
         toDateCopy.setHours(23, 59, 59, 999);
         
-        return entries.value.filter(entry => 
+        return filtered.filter(entry => 
           entry.createdAt instanceof Date && 
           fromDate && entry.createdAt >= fromDate && 
           entry.createdAt <= toDateCopy
         );
       } else if (fromDate) {
-        return entries.value.filter(entry => 
+        return filtered.filter(entry => 
           entry.createdAt instanceof Date && 
           fromDate && entry.createdAt >= fromDate
         );
@@ -116,14 +110,14 @@ const filteredEntries = computed(() => {
         // Create a copy before modifying
         const toDateCopy = new Date(toDate);
         toDateCopy.setHours(23, 59, 59, 999);
-        return entries.value.filter(entry => 
+        return filtered.filter(entry => 
           entry.createdAt instanceof Date && 
           toDate && entry.createdAt <= toDateCopy
         );
       }
-      return entries.value;
+      return filtered;
     default:
-      return entries.value;
+      return filtered;
   }
 });
 
@@ -169,7 +163,7 @@ const cancelDelete = () => {
 };
 
 // Get class for sentiment circle
-const getSentimentClass = (entry: JournalEntry) => {
+const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
   if (!entry.sentiments) return 'bg-gray-400 dark:bg-gray-500';
   
   // Calculate average sentiment value
@@ -208,7 +202,6 @@ const getSentimentClass = (entry: JournalEntry) => {
             </label>
             <div class="flex flex-wrap gap-2">
               <FilterButton 
-                class=""
                 :is-active="dateFilter === 'all'"
                 @click="dateFilter = 'all'" 
               >
@@ -237,6 +230,12 @@ const getSentimentClass = (entry: JournalEntry) => {
                 @click="dateFilter = 'custom'" 
               >
                 Custom range
+              </FilterButton>
+              <FilterButton 
+                :is-active="showDrafts"
+                @click="showDrafts = !showDrafts" 
+              >
+                {{ showDrafts ? 'Hide Drafts' : 'Show Drafts' }}
               </FilterButton>
             </div>
           </div>
@@ -318,25 +317,27 @@ const getSentimentClass = (entry: JournalEntry) => {
                   class="w-3 h-3 rounded-full mt-2 flex-shrink-0" 
                   :class="getSentimentClass(entry)"
                 />
-                <div class="flex items-center gap-2">
-                  <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.title }}</h3>
-                  <span 
-                    v-if="entry.isDraft" 
-                    class="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
-                  >
-                    Draft
-                  </span>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.title }}</h3>
+                    <span 
+                      v-if="entry.isDraft" 
+                      class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
+                    >
+                      <i class="ri-draft-line mr-1" />
+                      Draft
+                    </span>
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ formatDate(entry.createdAt instanceof Date ? entry.createdAt : new Date()) }}
+                  </div>
                 </div>
-              </div>
-              <div class="text-sm text-gray-500 dark:text-gray-400">
-                {{ formatDate(entry.createdAt instanceof Date ? entry.createdAt : new Date()) }}
               </div>
             </div>
             
             <!-- Preview of content (limited characters) -->
-            <!-- TODO: componentize this -->
             <div class="mt-3 text-gray-600 dark:text-gray-300 line-clamp-2 prose dark:prose-invert max-w-none ml-6">
-              <div>{{ getContentPreview(entry.content) }}</div>
+              <div v-html="entry.content" />
             </div>
 
             <!-- Tags if present -->
