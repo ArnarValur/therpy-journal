@@ -1,3 +1,4 @@
+// composables/useErrorHandler.ts
 import type { AuthError } from 'firebase/auth';
 
 type ErrorCategory = 'auth' | 'data' | 'network' | 'validation' | 'unknown';

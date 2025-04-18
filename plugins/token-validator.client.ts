@@ -1,4 +1,7 @@
+import { watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '~/stores/auth';
+import { useFirebaseAuth } from '~/composables/useFirebaseAuth';
 
 /**
  * Plugin to validate Firebase authentication tokens periodically
@@ -11,6 +14,7 @@ export default defineNuxtPlugin({
   async setup() {
     const authStore = useAuthStore();
     const { isTokenValid } = useFirebaseAuth();
+    const { $routes } = useNuxtApp();
     
     // Token validation interval in milliseconds (15 minutes)
     const VALIDATION_INTERVAL = 15 * 60 * 1000;
@@ -38,7 +42,7 @@ export default defineNuxtPlugin({
         // Redirect to login page with message
         const router = useRouter();
         await router.push({
-          path: '/login',
+          path: $routes.AUTH.LOGIN,
           query: { 
             reason: 'session-expired', 
             message: 'Your session has expired. Please log in again.' 
@@ -62,11 +66,11 @@ export default defineNuxtPlugin({
     }, { immediate: true });
     
     // Clean up on app unmount
-    onBeforeUnmount(() => {
+    /*onBeforeUnmount(() => {
       if (validationInterval) {
         clearInterval(validationInterval);
         validationInterval = null;
       }
-    });
+    });*/
   }
 }); 
