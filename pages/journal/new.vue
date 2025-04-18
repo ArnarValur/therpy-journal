@@ -178,6 +178,7 @@ onBeforeUnmount(() => {
 
       <!-- Entry form -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <!-- TODO: A Big TODO task: componentize this form into bits: title, content, tags, sentiment sliders and reuse them in the edit page ( Don't forget to add functionality to the editor, as in Bold, Italic, etc.) and Autosave -->
         <!-- Title input -->
         <div class="mb-6">
           <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

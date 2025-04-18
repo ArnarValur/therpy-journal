@@ -137,6 +137,8 @@ const handleBackToList = () => {
         <!-- Sentiments if present -->
         <div v-if="entry.sentiments" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
           <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Mood Analysis</h2>
+
+          <!-- TODO: componentize this -->
           <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             <div 
               v-for="(value, key) in entry.sentiments" 

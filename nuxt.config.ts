@@ -1,10 +1,16 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
-  devtools: { enabled: true },
+  devtools: {
+    enabled: true,
+
+    timeline: {
+      enabled: true
+    }
+  },
   modules: [
     '@pinia/nuxt',
-    'reka-ui/nuxt',
+    //'reka-ui/nuxt',
     '@nuxtjs/tailwindcss',
     '@nuxt/eslint',
     '@nuxtjs/color-mode',
@@ -51,5 +57,6 @@ export default defineNuxtConfig({
   typescript: {
     strict: true,
     typeCheck: true
-  }
+  },
+  debug: true
 })

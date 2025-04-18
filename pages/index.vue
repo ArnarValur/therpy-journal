@@ -8,40 +8,54 @@ definePageMeta({
   middleware: ['auth']
 });
 
+// Check if user is authenticated
+onMounted(async () => {
+  if (!authStore.isLoggedIn) {
+    await router.push(useNuxtApp().$routes.AUTH.LOGIN);
+    return;
+  }
+  
+  // Load journal entries for the user
+  await loadEntries();
+});
+
+const { loadEntries, entries, isLoading, error } = useJournalEntry();
+const { sanitize } = useSanitize();
+
+// Get required stores
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const authStore = useAuthStore();
+
+// Get router
 const router = useRouter();
 
-// Mock data for recent entries
-const recentEntries = ref([
-  {
-    id: 1,
-    title: 'Morning Reflection',
-    date: '2023-12-01',
-    excerpt: 'Today I woke up feeling refreshed and ready to tackle the day...',
-    sentiment: 'positive'
-  },
-  {
-    id: 2,
-    title: 'Evening Thoughts',
-    date: '2023-11-29',
-    excerpt: 'Reflecting on the challenges of today, I realized that...',
-    sentiment: 'neutral'
-  },
-  {
-    id: 3,
-    title: 'Anxiety Session',
-    date: '2023-11-25',
-    excerpt: 'I felt overwhelmed by the upcoming deadline and noticed that...',
-    sentiment: 'negative'
-  }
-]);
+// Function to strip HTML from journal entry content and get preview
+const getContentPreview = (content: string) => {
+  // First sanitize the HTML
+  const sanitizedHtml = sanitize(content);
+  // Create a temporary div to parse HTML and get text content
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = sanitizedHtml;
+  const textContent = tempDiv.textContent || tempDiv.innerText || '';
+  // Return truncated text
+  return textContent.substring(0, 90) + (textContent.length > 50 ? '...' : '');
+};
 
-// Mock sentiment data for chart
-const _sentimentData = {
-  positive: 12,
-  neutral: 8,
-  negative: 5
+// Function to format date
+const formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+};
+
+// Handle journal entry viewing
+const handleViewEntry = (id: string) => {
+  const { $routes } = useNuxtApp();
+  router.push($routes.JOURNAL.VIEW(id));
 };
 
 // Handle new journal entry creation
@@ -106,24 +120,24 @@ const handleNewEntry = () => {
       </div>
       <div class="divide-y dark:divide-gray-700">
         <div
-          v-for="entry in recentEntries"
+          v-for="entry in entries"
           :key="entry.id"
           class="p-4 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
         >
           <div class="flex items-start justify-between">
             <div class="flex-1 pr-3">
               <h3 class="font-medium text-gray-800 dark:text-gray-200 text-sm sm:text-base">{{ entry.title }}</h3>
-              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{{ entry.date }}</p>
-              <p class="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2 sm:line-clamp-none">{{ entry.excerpt }}</p>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{{ formatDate(entry.createdAt instanceof Date ? entry.createdAt : new Date()) }}</p>
+              <p class="mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 line-clamp-2 sm:line-clamp-none">{{ getContentPreview(entry.content) }}</p>
             </div>
-            <div 
+            <!--<div 
               class="w-3 h-3 rounded-full mt-1 flex-shrink-0" 
               :class="{
                 'bg-green-500': entry.sentiment === 'positive',
                 'bg-gray-400 dark:bg-gray-500': entry.sentiment === 'neutral',
                 'bg-red-500': entry.sentiment === 'negative'
               }"
-            />
+            />-->
           </div>
         </div>
       </div>

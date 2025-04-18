@@ -7,7 +7,11 @@ import { useSanitize } from '~/composables/useSanitize';
 // Get required composables
 const { loadEntries, entries, isLoading, error, deleteEntry } = useJournalEntry();
 const { sanitize } = useSanitize();
+
+// Get required stores
 const authStore = useAuthStore();
+
+// Get router
 const router = useRouter();
 
 // Date filter state
@@ -50,7 +54,7 @@ const getDateDaysAgo = (days: number) => {
   return date;
 };
 
-// Function to strip HTML and get preview
+// Function to strip HTML from journal entry content and get preview
 const getContentPreview = (content: string) => {
   // First sanitize the HTML
   const sanitizedHtml = sanitize(content);
@@ -322,6 +326,7 @@ const getSentimentClass = (entry: JournalEntry) => {
             </div>
             
             <!-- Preview of content (limited characters) -->
+            <!-- TODO: componentize this -->
             <div class="mt-3 text-gray-600 dark:text-gray-300 line-clamp-2 prose dark:prose-invert max-w-none ml-6">
               <div>{{ getContentPreview(entry.content) }}</div>
             </div>
@@ -346,6 +351,7 @@ const getSentimentClass = (entry: JournalEntry) => {
 
           <!-- Action buttons -->
           <div class="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 flex justify-end space-x-2">
+            <!-- TODO: componentize these buttons -->
             <button 
               type="button"
               class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center"
