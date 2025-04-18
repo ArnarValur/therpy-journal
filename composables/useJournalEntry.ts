@@ -10,6 +10,7 @@ export interface JournalEntry {
   userId: string;
   tags?: string[];
   sentiments?: Record<string, number>;
+  isDraft?: boolean;
 }
 
 // Type for Firebase update data

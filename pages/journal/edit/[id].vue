@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue';
+import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '~/stores/auth';
 import { useNuxtApp } from '#app';
 import { useJournalEntry } from '~/composables/useJournalEntry';
+import { useDebounceFn } from '@vueuse/core';
 
 import SaveButton from '~/components/button/SaveButton.vue';
 import CancelButton from '~/components/button/CancelButton.vue';
@@ -32,10 +33,49 @@ const loadingEntry = ref(true);
 const sentimentOptions = ref<Array<{name: string; key: string; value: number; min: number; max: number}>>([]);
 const newSentimentName = ref('');
 
+// Autosave state
+const isAutosaving = ref(false);
+const lastAutosaveTime = ref<Date | null>(null);
+
+// Autosave status message
+const autosaveStatus = computed(() => {
+  if (isAutosaving.value) return 'Saving...';
+  if (lastAutosaveTime.value) return `Last saved at ${lastAutosaveTime.value.toLocaleTimeString()}`;
+  return '';
+});
+
 // Form validation
 const isTitleValid = computed(() => title.value.trim().length > 0);
 const isContentValid = computed(() => content.value.trim().length > 0 || true); // Always valid to allow empty content
 const isFormValid = computed(() => isTitleValid.value && isContentValid.value);
+
+// Create a debounced autosave function
+const debouncedAutosave = useDebounceFn(async () => {
+  if (!title.value && !content.value) return; // Don't autosave if both title and content are empty
+  
+  isAutosaving.value = true;
+  
+  try {
+    // Update sentiments object from sliders
+    sentimentOptions.value.forEach(sentiment => {
+      sentiments.value[sentiment.key] = sentiment.value;
+    });
+
+    const updatedEntry = {
+      title: title.value,
+      content: content.value,
+      tags: tags.value,
+      sentiments: sentiments.value
+    };
+
+    await updateEntry(entryId.value, updatedEntry);
+    lastAutosaveTime.value = new Date();
+  } catch (err) {
+    console.error('Autosave failed:', err);
+  } finally {
+    isAutosaving.value = false;
+  }
+}, 2000); // Debounce for 2 seconds
 
 // TipTap editor configuration
 const editor = useEditor({
@@ -43,8 +83,24 @@ const editor = useEditor({
   extensions: [StarterKit],
   onUpdate: ({ editor }) => {
     content.value = editor.getHTML();
+    debouncedAutosave();
   }
 });
+
+// Watch for changes in title and trigger autosave
+watch(title, () => {
+  debouncedAutosave();
+});
+
+// Watch for changes in tags and trigger autosave
+watch(tags, () => {
+  debouncedAutosave();
+}, { deep: true });
+
+// Watch for changes in sentiment sliders and trigger autosave
+watch(sentimentOptions, () => {
+  debouncedAutosave();
+}, { deep: true });
 
 // Check if user is authenticated and load journal entry
 onMounted(async () => {
@@ -249,7 +305,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Rich text editor -->
-      <div class="mb-6">
+      <div class="mb-6 relative">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Content
         </label>
@@ -370,6 +426,14 @@ onBeforeUnmount(() => {
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400" />
           </div>
         </div>
+
+        <!-- Autosave status -->
+        <div 
+          v-if="autosaveStatus" 
+          class="absolute bottom-0 right-0 translate-y-full pt-2 text-sm text-gray-500 dark:text-gray-400"
+        >
+          {{ autosaveStatus }}
+        </div>
       </div>
 
       <!-- Tags input -->
@@ -416,7 +480,7 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Custom Sentiment sliders -->
-      <div class="mb-6">
+      <div v-if="sentimentOptions.length > 0" class="mb-6">
         <div class="flex items-center justify-between mb-3">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
             How are you feeling?

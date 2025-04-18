@@ -135,7 +135,7 @@ const handleBackToList = () => {
         <div class="prose dark:prose-invert max-w-none" v-html="sanitizedContent" />
 
         <!-- Sentiments if present -->
-        <div v-if="entry.sentiments" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div v-if="entry.sentiments && Object.keys(entry.sentiments).length > 0" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
           <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Mood Analysis</h2>
 
           <!-- TODO: componentize this -->

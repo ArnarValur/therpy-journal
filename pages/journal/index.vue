@@ -318,7 +318,15 @@ const getSentimentClass = (entry: JournalEntry) => {
                   class="w-3 h-3 rounded-full mt-2 flex-shrink-0" 
                   :class="getSentimentClass(entry)"
                 />
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.title }}</h3>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.title }}</h3>
+                  <span 
+                    v-if="entry.isDraft" 
+                    class="px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
+                  >
+                    Draft
+                  </span>
+                </div>
               </div>
               <div class="text-sm text-gray-500 dark:text-gray-400">
                 {{ formatDate(entry.createdAt instanceof Date ? entry.createdAt : new Date()) }}
