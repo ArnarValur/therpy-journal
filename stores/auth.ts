@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   updateProfile,
+  sendEmailVerification,
   type AuthError,
   signOut,
   onAuthStateChanged,
@@ -21,6 +22,7 @@ export type User = {
   name: string;
   email: string;
   photoURL?: string | null;
+  emailVerified?: boolean;
 };
 
 export const useAuthStore = defineStore('auth', () => {
@@ -108,7 +110,6 @@ export const useAuthStore = defineStore('auth', () => {
       };
 
       // Create new user document with initial data
-      console.log('Creating user document:', userDoc);
       await setDoc(userRef, userDoc);
 
       // Set the initial sidebar state in localStorage
@@ -118,7 +119,6 @@ export const useAuthStore = defineStore('auth', () => {
         }));
       }
 
-      console.log('User document created successfully');
     } catch (err) {
       console.error('Error saving user to Firestore:', err);
       throw new Error('Failed to initialize user data');
@@ -134,7 +134,8 @@ export const useAuthStore = defineStore('auth', () => {
       id: firebaseUser.uid,
       name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
       email: firebaseUser.email || '',
-      photoURL: firebaseUser.photoURL || null
+      photoURL: firebaseUser.photoURL || null,
+      emailVerified: firebaseUser.emailVerified // Always use the current verification status from Firebase
     };
     
     try {
@@ -146,9 +147,10 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = {
           ...baseUser,
           ...firestoreData,
-          // Always keep id and email from Auth for security
+          // Always keep critical auth data from Firebase Auth for security
           id: baseUser.id,
-          email: baseUser.email
+          email: baseUser.email,
+          emailVerified: baseUser.emailVerified // Ensure verification status is from Firebase
         };
       } else {
         // Use only Firebase Auth data and save it to Firestore
@@ -156,9 +158,12 @@ export const useAuthStore = defineStore('auth', () => {
         await saveUserToFirestore(baseUser);
       }
       
-      // Store authenticated user data in localStorage for faster loading on refresh
-      if (import.meta.client && user.value) {
+      // Only store authenticated AND verified user data in localStorage
+      if (import.meta.client && user.value && user.value.emailVerified) {
         localStorage.setItem('nuxt-auth-user', JSON.stringify(user.value));
+      } else if (import.meta.client) {
+        // Remove any cached data for unverified users
+        localStorage.removeItem('nuxt-auth-user');
       }
     } catch (err) {
       // Clear user value if initialization fails
@@ -190,6 +195,24 @@ export const useAuthStore = defineStore('auth', () => {
       
       const firebaseUser = userCredential.user;
       
+      // Reload the user to get the latest verification status
+      await firebaseUser.reload();
+      
+      // Check if email is verified before proceeding
+      if (!firebaseUser.emailVerified) {
+        // Clear any existing user state
+        user.value = null;
+        if (import.meta.client) {
+          localStorage.removeItem('nuxt-auth-user');
+        }
+        console.log('[AUTH] Login blocked - email not verified');
+        error.value = 'Please verify your email before logging in';
+        throw {
+          code: 'auth/email-not-verified',
+          message: 'Email not verified'
+        };
+      }
+      
       // Set user with merged data from Firebase Auth and Firestore
       await setUserWithMergedData(firebaseUser);
       
@@ -206,7 +229,7 @@ export const useAuthStore = defineStore('auth', () => {
         error.value = 'This account has been disabled';
       } else if (firebaseError.code === 'auth/too-many-requests') {
         error.value = 'Too many failed login attempts. Please try again later.';
-      } else {
+      } else if (error.value !== 'Please verify your email before logging in') {
         error.value = 'Failed to login. Please try again.';
       }
       
@@ -234,6 +257,21 @@ export const useAuthStore = defineStore('auth', () => {
       const result = await signInWithPopup($firebaseAuth, googleProvider);
       const firebaseUser = result.user;
       
+      // Reload the user to get the latest verification status
+      await firebaseUser.reload();
+      
+      // Check if email is verified before proceeding
+      if (!firebaseUser.emailVerified) {
+        // Clear any existing user state
+        user.value = null;
+        if (import.meta.client) {
+          localStorage.removeItem('nuxt-auth-user');
+        }
+        console.log('[AUTH] Google login blocked - email not verified');
+        error.value = 'Please verify your email before logging in';
+        throw new Error('Email not verified');
+      }
+      
       // Set user with merged data from Firebase Auth and Firestore
       await setUserWithMergedData(firebaseUser);
       
@@ -250,7 +288,7 @@ export const useAuthStore = defineStore('auth', () => {
         return;
       } else if (firebaseError.code === 'auth/account-exists-with-different-credential') {
         error.value = 'An account already exists with the same email address but different sign-in credentials';
-      } else {
+      } else if (error.value !== 'Please verify your email before logging in') {
         error.value = 'Failed to sign in with Google. Please try again.';
       }
       
@@ -287,12 +325,16 @@ export const useAuthStore = defineStore('auth', () => {
         displayName: name
       });
       
+      // Send email verification
+      await sendEmailVerification(firebaseUser);
+      
       // Create user object
       const newUser: User = {
         id: firebaseUser.uid,
         name: name,
         email: firebaseUser.email || email,
-        photoURL: null
+        photoURL: null,
+        emailVerified: firebaseUser.emailVerified
       };
       
       // Save to Firestore first before setting in store
@@ -313,6 +355,11 @@ export const useAuthStore = defineStore('auth', () => {
       if (currentUser.value) {
         await createWelcomeMessage(newUser.id);
       }
+      
+      return { 
+        user: newUser, 
+        verificationEmailSent: true 
+      };
       
     } catch (err) {
       // If there's an error, we need to clean up
@@ -442,13 +489,20 @@ export const useAuthStore = defineStore('auth', () => {
         try {
           const cachedUser = localStorage.getItem('nuxt-auth-user');
           if (cachedUser) {
-            // Use cached user data while we verify with Firebase
-            user.value = JSON.parse(cachedUser) as User;
-            console.log('[CLIENT] Using cached user data:', user.value.name);
+            const parsedUser = JSON.parse(cachedUser) as User;
+            // Only use cached data if the user was verified
+            if (parsedUser.emailVerified) {
+              user.value = parsedUser;
+              console.log('[CLIENT] Using cached user data:', user.value.name);
+            } else {
+              // Remove invalid cached data
+              localStorage.removeItem('nuxt-auth-user');
+            }
           }
         } catch (err) {
           console.error('[CLIENT] Error reading cached user data:', err);
           // Continue with normal initialization if localStorage fails
+          localStorage.removeItem('nuxt-auth-user');
         }
       }
     }
@@ -478,9 +532,24 @@ export const useAuthStore = defineStore('auth', () => {
         return null;
       }
       
+      // Reload the current user to get fresh data
+      await currentUser.value.reload();
+      
+      // Only proceed with initialization if email is verified
+      if (!currentUser.value.emailVerified) {
+        console.log(`${context} User email not verified, clearing user state`);
+        user.value = null;
+        if (import.meta.client) {
+          localStorage.removeItem('nuxt-auth-user');
+        }
+        isLoading.value = false;
+        return null;
+      }
+      
       // User is already signed in - load merged data
       await setUserWithMergedData(currentUser.value);
       console.log(`${context} User already signed in:`, user.value?.name);
+      console.log(`${context} Email verification status:`, user.value?.emailVerified);
       
       isLoading.value = false;
       return user.value;
@@ -520,7 +589,75 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = false;
     }
   };
-  
+
+  /**
+   * Send verification email to current user
+   */
+  const sendVerificationEmail = async () => {
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const { $firebaseAuth } = useNuxtApp();
+      const currentUser = $firebaseAuth.currentUser;
+      
+      if (!currentUser) {
+        throw new Error('No authenticated user found');
+      }
+      
+      await sendEmailVerification(currentUser);
+      return true;
+    } catch (err) {
+      console.error('Failed to send verification email:', err);
+      const firebaseError = err as AuthError;
+      
+      if (firebaseError.code === 'auth/too-many-requests') {
+        error.value = 'Too many verification emails sent. Please try again later.';
+      } else {
+        error.value = 'Failed to send verification email. Please try again.';
+      }
+      
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  /**
+   * Reload the current user to check for email verification status
+   */
+  const checkEmailVerification = async () => {
+    try {
+      const { $firebaseAuth } = useNuxtApp();
+      const currentUser = $firebaseAuth.currentUser;
+      
+      if (!currentUser) return false;
+      
+      // Reload user to get current email verification status
+      await currentUser.reload();
+      
+      // Update the store with new verification status
+      if (user.value) {
+        user.value.emailVerified = currentUser.emailVerified;
+        
+        // Update localStorage
+        if (import.meta.client) {
+          localStorage.setItem('nuxt-auth-user', JSON.stringify(user.value));
+        }
+      }
+      
+      return currentUser.emailVerified;
+    } catch (error) {
+      console.error('Failed to check email verification:', error);
+      return false;
+    }
+  };
+
+  // Add email verification status computed property
+  const isEmailVerified = computed(() => {
+    return user.value?.emailVerified ?? false;
+  });
+
   /**
    * Return the store state
    */
@@ -529,6 +666,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     isLoggedIn,
+    isEmailVerified,
     login,
     loginWithGoogle,
     register,
@@ -537,6 +675,8 @@ export const useAuthStore = defineStore('auth', () => {
     resetPassword,
     initialize,
     loadUserFromFirestore,
-    saveUserToFirestore
+    saveUserToFirestore,
+    sendVerificationEmail,
+    checkEmailVerification
   };
 }); 

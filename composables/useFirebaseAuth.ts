@@ -53,7 +53,7 @@ export function useFirebaseAuth() {
       const user = auth.currentUser;
       if (!user) return false;
 
-      // Force token refresh and check if successful
+      // Force token refresh to check if it's still valid
       await user.getIdToken(true);
       return true;
     } catch (error) {

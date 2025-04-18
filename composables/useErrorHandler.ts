@@ -40,6 +40,10 @@ export function useErrorHandler() {
       case 'auth/wrong-password':
         message = 'Invalid email or password';
         break;
+      case 'auth/unverified-email':
+      case 'auth/email-not-verified':
+        message = 'Your email address has not been verified. Please check your inbox and verify your email before logging in.';
+        break;
       case 'auth/invalid-email':
         message = 'Invalid email format';
         break;
@@ -157,8 +161,6 @@ export function useErrorHandler() {
   const logError = (error: unknown, category?: ErrorCategory): AppError => {
     const appError = handleError(error, category);
     
-    // Log the error to console
-    console.error(`[${appError.category.toUpperCase()}] ${appError.message}`, appError);
     
     // In production, you could also log to a service like Sentry here
     

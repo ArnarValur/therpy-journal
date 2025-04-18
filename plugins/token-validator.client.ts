@@ -1,5 +1,5 @@
 import { watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter } from '#app';
 import { useAuthStore } from '~/stores/auth';
 import { useFirebaseAuth } from '~/composables/useFirebaseAuth';
 
@@ -17,37 +17,69 @@ export default defineNuxtPlugin({
     const { $routes } = useNuxtApp();
     
     // Token validation interval in milliseconds (15 minutes)
-    const VALIDATION_INTERVAL = 15 * 60 * 1000;
+    const VALIDATION_INTERVAL = 900000; // 15 minutes in milliseconds
     
     let validationInterval: NodeJS.Timeout | null = null;
+    let isValidating = false; // Flag to prevent concurrent validations
+    let failedAttempts = 0; // Counter for failed validation attempts
     
     // Function to validate token
     const validateToken = async () => {
-      if (!authStore.isLoggedIn) return;
+      if (!authStore.isLoggedIn || isValidating) return;
       
-      const isValid = await isTokenValid();
-      
-      if (!isValid) {
-        console.warn('Authentication token is invalid or expired. Logging out...');
+      try {
+        isValidating = true;
+        const isValid = await isTokenValid();
         
-        // Clear the interval before logout
-        if (validationInterval) {
-          clearInterval(validationInterval);
-          validationInterval = null;
-        }
-        
-        // Call the logout function
-        await authStore.logout();
-        
-        // Redirect to login page with message
-        const router = useRouter();
-        await router.push({
-          path: $routes.AUTH.LOGIN,
-          query: { 
-            reason: 'session-expired', 
-            message: 'Your session has expired. Please log in again.' 
+        if (!isValid) {
+          // Clear the interval before logout
+          if (validationInterval) {
+            clearInterval(validationInterval);
+            validationInterval = null;
           }
-        });
+          
+          // Call the logout function
+          await authStore.logout();
+          
+          // Get router instance
+          const router = useRouter();
+          
+          // Redirect to login page with message
+          await router.push({
+            path: $routes.AUTH.LOGIN,
+            query: { 
+              reason: 'session-expired', 
+              message: 'Your session has expired. Please log in again.' 
+            }
+          });
+        } else {
+          // Reset failed attempts on successful validation
+          failedAttempts = 0;
+        }
+      } catch (error) {
+        console.error('[Token Validator] Token validation error:', error);
+        failedAttempts++;
+        
+        // If we've failed multiple times, stop the interval
+        if (failedAttempts >= 3) {
+          if (validationInterval) {
+            clearInterval(validationInterval);
+            validationInterval = null;
+          }
+          
+          // Force logout after multiple failures
+          await authStore.logout();
+          const router = useRouter();
+          await router.push({
+            path: $routes.AUTH.LOGIN,
+            query: { 
+              reason: 'validation-error', 
+              message: 'Session validation failed. Please log in again.' 
+            }
+          });
+        }
+      } finally {
+        isValidating = false;
       }
     };
     
@@ -66,11 +98,11 @@ export default defineNuxtPlugin({
     }, { immediate: true });
     
     // Clean up on app unmount
-    /*onBeforeUnmount(() => {
+    onBeforeUnmount(() => {
       if (validationInterval) {
         clearInterval(validationInterval);
         validationInterval = null;
       }
-    });*/
+    });
   }
 }); 

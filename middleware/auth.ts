@@ -49,6 +49,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // After waiting or if already loaded, check the auth state
   
+  // Check if user is logged in but email is not verified
+  if (authStore.isLoggedIn && !authStore.isEmailVerified && !isPublicRoute && to.path !== $routes.AUTH.VERIFY_EMAIL) {
+    console.log('Redirecting unverified user to verification page');
+    return navigateTo($routes.AUTH.VERIFY_EMAIL);
+  }
+
   // If user is not logged in and trying to access a protected route
   if (!authStore.isLoggedIn && !isPublicRoute) {
     console.log('Redirecting unauthenticated user to login');
@@ -68,13 +74,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // If user is logged in and trying to access auth pages
-  if (authStore.isLoggedIn && (to.path === $routes.AUTH.LOGIN || to.path === $routes.AUTH.REGISTER)) {
+  if (authStore.isLoggedIn && authStore.isEmailVerified && 
+    (to.path === $routes.AUTH.LOGIN || to.path === $routes.AUTH.REGISTER || to.path === $routes.AUTH.VERIFY_EMAIL)) {
     console.log('Redirecting authenticated user to dashboard');
     return navigateTo($routes.HOME);
   }
   
   // Check if there's a stored redirect path after successful authentication
-  if (authStore.isLoggedIn && to.path === $routes.HOME && import.meta.client) {
+  if (authStore.isLoggedIn && authStore.isEmailVerified && to.path === $routes.HOME && import.meta.client) {
     const redirectPath = sessionStorage.getItem('authRedirect');
     if (redirectPath) {
       sessionStorage.removeItem('authRedirect');

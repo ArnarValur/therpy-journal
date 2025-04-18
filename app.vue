@@ -86,6 +86,10 @@ onMounted(async () => {
     }
   }, { immediate: true });
 });
+
+definePageMeta({
+  middleware: ['auth', 'email-verified']
+});
 </script>
 
 <template>

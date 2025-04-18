@@ -10,7 +10,8 @@ export default defineNuxtPlugin((_nuxtApp) => {
       LOGIN: '/auth/login',
       REGISTER: '/auth/register',
       FORGOT_PASSWORD: '/auth/forgot-password',
-      RESET_PASSWORD: '/auth/reset-password'
+      RESET_PASSWORD: '/auth/reset-password',
+      VERIFY_EMAIL: '/auth/verify-email-required'
     },
     JOURNAL: {
       HOME: '/journal',
@@ -26,7 +27,8 @@ export default defineNuxtPlugin((_nuxtApp) => {
     routes.AUTH.LOGIN,
     routes.AUTH.REGISTER,
     routes.AUTH.FORGOT_PASSWORD,
-    routes.AUTH.RESET_PASSWORD
+    routes.AUTH.RESET_PASSWORD,
+    routes.AUTH.VERIFY_EMAIL
   ];
 
   return {
