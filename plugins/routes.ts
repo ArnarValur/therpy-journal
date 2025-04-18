@@ -1,3 +1,4 @@
+// plugins/routes.ts
 /**
  * Plugin to provide route constants globally
  * This allows using $routes.AUTH.LOGIN etc. throughout the app

@@ -1,3 +1,4 @@
+<!-- components/button/EntryButton.vue -->
 <script setup lang="ts">
 const emit = defineEmits(['click']);
 </script> 

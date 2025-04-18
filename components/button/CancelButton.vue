@@ -1,3 +1,4 @@
+<!-- components/button/CancelButton.vue -->
 <script setup lang="ts">
 defineProps<{
   disabled?: boolean;

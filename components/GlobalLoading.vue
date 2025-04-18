@@ -1,3 +1,4 @@
+<!-- components/GlobalLoading.vue -->
 <script setup lang="ts">
 const { isLoading, loadingMessage } = useLoadingState();
 </script>

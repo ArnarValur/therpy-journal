@@ -1,3 +1,4 @@
+// composables/useJournalEntry.ts
 import { collection, query, getDocs, addDoc, updateDoc, doc, getDoc, orderBy, Timestamp, deleteDoc } from 'firebase/firestore';
 import { ref, computed } from 'vue';
 

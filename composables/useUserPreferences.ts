@@ -1,3 +1,4 @@
+// composables/useUserPreferences.ts
 import { onMounted, watch, ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
@@ -33,9 +34,10 @@ export function useUserPreferences() {
     try {
       if (!$firebaseDb) return null;
       
-      const prefsDoc = await getDoc(doc($firebaseDb, 'userPreferences', userId));
-      if (prefsDoc.exists()) {
-        return prefsDoc.data() as Partial<UserPreferences>;
+      const userDoc = await getDoc(doc($firebaseDb, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return userData.preferences as Partial<UserPreferences>;
       }
       return null;
     } catch (err) {
@@ -51,15 +53,26 @@ export function useUserPreferences() {
     try {
       if (!$firebaseDb) return;
       
-      const prefsRef = doc($firebaseDb, 'userPreferences', userId);
-      const prefsDoc = await getDoc(prefsRef);
+      const userRef = doc($firebaseDb, 'users', userId);
+      const userDoc = await getDoc(userRef);
       
-      if (prefsDoc.exists()) {
-        await updateDoc(prefsRef, prefs);
+      if (userDoc.exists()) {
+        // Update only the preferences field
+        await updateDoc(userRef, {
+          preferences: {
+            ...userDoc.data()?.preferences,
+            ...prefs,
+            updatedAt: new Date()
+          }
+        });
       } else {
-        await setDoc(prefsRef, {
-          ...prefs,
-          createdAt: new Date()
+        // Create new user document with preferences
+        await setDoc(userRef, {
+          preferences: {
+            ...prefs,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
         });
       }
     } catch (err) {

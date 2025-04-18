@@ -63,11 +63,11 @@ export default defineNuxtPlugin({
     }, { immediate: true });
     
     // Clean up on app unmount
-    onBeforeUnmount(() => {
+    /*onBeforeUnmount(() => {
       if (validationInterval) {
         clearInterval(validationInterval);
         validationInterval = null;
       }
-    });
+    });*/
   }
 }); 

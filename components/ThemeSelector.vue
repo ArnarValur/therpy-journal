@@ -1,3 +1,4 @@
+<!-- components/ThemeSelector.vue -->
 <script setup lang="ts">
 const colorMode = useColorMode();
 

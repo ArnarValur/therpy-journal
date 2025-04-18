@@ -1,7 +1,9 @@
+<!-- layouts/default.vue -->
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useLogout } from '~/composables/useLogout';
 import { useUserPreferences } from '~/composables/useUserPreferences';
+import { useFeatureFlagsStore } from '~/stores/featureFlags';
 
 // Get sidebar state from the user preferences composable
 const { sidebarOpen, toggleSidebar } = useUserPreferences();
@@ -10,6 +12,12 @@ const { logout, isLoggingOut } = useLogout();
 const showLogoutConfirm = ref(false);
 const showSettingsModal = ref(false);
 const authStore = useAuthStore();
+const featureFlagsStore = useFeatureFlagsStore();
+
+// Load feature flags when component mounts
+onMounted(async () => {
+  await featureFlagsStore.loadFeatureFlags();
+});
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
@@ -158,7 +166,7 @@ const handleNavigation = () => {
                 </NuxtLink>
               </li>
               <!-- Therapist -->
-              <li>
+              <li v-if="featureFlagsStore.showTherapistLink">
                 <NuxtLink 
                   to="/therapist" 
                   class="nav-link flex items-center px-4 py-2"

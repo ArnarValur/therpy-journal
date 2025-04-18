@@ -1,3 +1,4 @@
+<!-- components/button/FilterButton.vue -->
 <script setup lang="ts">
 defineProps({
   isActive: {

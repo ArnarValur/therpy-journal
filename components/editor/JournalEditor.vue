@@ -1,3 +1,4 @@
+<!-- components/editor/JournalEditor.vue -->
 <script setup lang="ts">
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
@@ -25,9 +26,15 @@ const editor = useEditor({
   editorProps: {
     attributes: {
       class: 'prose dark:prose-invert max-w-none p-4 min-h-[250px]',
+    },
+    handleKeyDown: (view, event) => {
+      if (event.key === ' ') {
+        return false; // Let the default handler take care of it
+      }
+      return false;
     }
   },
-  onUpdate: ({ editor }) => {
+  onBlur: ({ editor }) => {
     emit('update', editor.getHTML());
   }
 });
@@ -111,19 +118,5 @@ const toolbarActions: ToolbarItem[] = [
 </template>
 
 <style>
-.ProseMirror {
-  outline: none;
-}
 
-.ProseMirror p.is-editor-empty:first-child::before {
-  content: attr(data-placeholder);
-  float: left;
-  color: #adb5bd;
-  pointer-events: none;
-  height: 0;
-}
-
-.dark .ProseMirror p.is-editor-empty:first-child::before {
-  color: #6c757d;
-}
 </style> 

@@ -1,3 +1,4 @@
+<!-- components/button/BackButton.vue -->
 <script setup lang="ts">
 const emit = defineEmits(['click']);
 </script> 

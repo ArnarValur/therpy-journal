@@ -1,3 +1,4 @@
+// composables/useLoadingState.ts
 /**
  * Manages loading states throughout the application
  * Can track multiple loading operations simultaneously

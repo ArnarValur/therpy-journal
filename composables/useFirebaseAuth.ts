@@ -1,3 +1,4 @@
+// composables/useFirebaseAuth.ts
 import { onAuthStateChanged } from 'firebase/auth';
 import { useAuthStore } from '~/stores/auth';
 

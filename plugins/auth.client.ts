@@ -1,3 +1,4 @@
+// plugins/auth.client.ts
 import { useAuthStore } from '~/stores/auth';
 import { setPersistence, browserLocalPersistence, type Auth } from 'firebase/auth';
 

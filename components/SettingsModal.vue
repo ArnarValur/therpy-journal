@@ -1,3 +1,4 @@
+<!-- components/SettingsModal.vue -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '~/stores/auth';
@@ -325,8 +326,8 @@ watch(() => props.isOpen, (isOpen) => {
           <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-white">Account Settings</h3>
           <button
             class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-            @click="closeModal"
             aria-label="Close settings"
+            @click="closeModal"
           >
             <i class="ri-close-line text-lg" />
           </button>

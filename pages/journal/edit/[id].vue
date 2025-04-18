@@ -1,3 +1,4 @@
+<!-- pages/journal/edit/[id].vue -->
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue';
 import { useEditor } from '@tiptap/vue-3';

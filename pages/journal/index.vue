@@ -1,3 +1,4 @@
+<!-- pages/journal/index.vue -->
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
 import EntryButton from '~/components/button/EntryButton.vue';

@@ -1,3 +1,4 @@
+// composables/useLogout.ts
 import { ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 

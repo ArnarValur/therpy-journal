@@ -1,3 +1,4 @@
+<!-- layouts/auth.vue -->
 <script setup lang="ts">
 // Auth layout for login and registration pages
 </script>

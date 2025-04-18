@@ -1,3 +1,4 @@
+// composables/useEncryption.ts
 import CryptoJS from 'crypto-js';
 
 /**

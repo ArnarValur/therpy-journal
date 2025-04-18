@@ -1,3 +1,4 @@
+// middleware/auth.ts
 import { useAuthStore } from '~/stores/auth';
 
 /**

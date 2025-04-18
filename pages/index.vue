@@ -1,3 +1,4 @@
+<!-- pages/index.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useAuthStore } from '~/stores/auth';
@@ -19,6 +20,7 @@ onMounted(async () => {
   await loadEntries();
 });
 
+// TODO: add loading state and error handling
 const { loadEntries, entries, isLoading, error } = useJournalEntry();
 const { sanitize } = useSanitize();
 
