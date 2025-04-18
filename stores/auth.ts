@@ -12,33 +12,41 @@ import {
   onAuthStateChanged,
   type User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
+import { useFirestore, useDocument, useCurrentUser } from 'vuefire';
+import { useEncryption } from '~/composables/useEncryption';
 
 export type User = {
   id: string;
   name: string;
   email: string;
-  photoURL?: string;
+  photoURL?: string | null;
 };
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  const { encrypt } = useEncryption();
+  
+  // Get Firestore instance using VueFire
+  const db = useFirestore();
+  
+  // Get current Firebase user using VueFire
+  const currentUser = useCurrentUser();
 
   const isLoggedIn = computed(() => !!user.value);
 
   /**
-   * Load user data from Firestore
+   * Load user data from Firestore using VueFire
    * @param userId Firebase user ID
    */
   const loadUserFromFirestore = async (userId: string): Promise<Partial<User> | null> => {
     try {
-      const { $firebaseDb } = useNuxtApp();
-      const userDoc = await getDoc(doc($firebaseDb, 'users', userId));
+      const { data: userData } = useDocument(doc(db, 'users', userId));
       
-      if (userDoc.exists()) {
-        return userDoc.data() as Partial<User>;
+      if (userData.value) {
+        return userData.value as Partial<User>;
       }
       
       return null;
@@ -49,26 +57,71 @@ export const useAuthStore = defineStore('auth', () => {
   };
 
   /**
-   * Save user data to Firestore
+   * Create welcome message for new user
+   * @param userId User ID to create welcome message for
+   */
+  const createWelcomeMessage = async (userId: string) => {
+    try {
+      const welcomeTitle = 'Welcome to TherapyJournal';
+      const welcomeContent = 'Welcome to your new journal! This is a safe space for you to write your thoughts and feelings.';
+      const welcomeTag = 'welcome';
+
+      const journalRef = doc(db, 'users', userId, 'journalEntries', 'welcome');
+      await setDoc(journalRef, {
+        title: encrypt(welcomeTitle),
+        content: encrypt(welcomeContent),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId: userId,
+        tags: [encrypt(welcomeTag)],
+        isDraft: false
+      });
+
+      console.log('Welcome message created successfully');
+    } catch (err) {
+      console.error('Failed to create welcome message:', err);
+      // Don't throw - welcome message is optional
+    }
+  };
+
+  /**
+   * Save user data to Firestore and initialize their collections using VueFire
    * @param userData User data to save
    */
   const saveUserToFirestore = async (userData: User): Promise<void> => {
     try {
-      const { $firebaseDb } = useNuxtApp();
-      const userRef = doc($firebaseDb, 'users', userData.id);
+      const userRef = doc(db, 'users', userData.id);
       
-      // Check if user document already exists
-      const userDoc = await getDoc(userRef);
-      
-      if (!userDoc.exists()) {
-        // Create new user document
-        await setDoc(userRef, {
-          ...userData,
-          createdAt: new Date()
-        });
+      // Create base user document with required fields
+      const userDoc = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        photoURL: userData.photoURL,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        preferences: {
+          theme: 'system',
+          emailNotifications: true,
+          sidebarOpen: true
+        }
+      };
+
+      // Create new user document with initial data
+      console.log('Creating user document:', userDoc);
+      await setDoc(userRef, userDoc);
+
+      // Set the initial sidebar state in localStorage
+      if (import.meta.client) {
+        localStorage.setItem(`user-prefs-${userData.id}`, JSON.stringify({
+          sidebarOpen: true
+        }));
       }
+
+      console.log('User document created successfully');
     } catch (err) {
       console.error('Error saving user to Firestore:', err);
+      throw new Error('Failed to initialize user data');
     }
   };
 
@@ -81,30 +134,39 @@ export const useAuthStore = defineStore('auth', () => {
       id: firebaseUser.uid,
       name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
       email: firebaseUser.email || '',
-      photoURL: firebaseUser.photoURL || undefined
+      photoURL: firebaseUser.photoURL || null
     };
     
-    // Try to get user data from Firestore
-    const firestoreData = await loadUserFromFirestore(firebaseUser.uid);
-    
-    if (firestoreData) {
-      // Merge data, prioritizing Firestore data over Firebase Auth data
-      user.value = {
-        ...baseUser,
-        ...firestoreData,
-        // Always keep id and email from Auth for security
-        id: baseUser.id,
-        email: baseUser.email
-      };
-    } else {
-      // Use only Firebase Auth data and save it to Firestore
-      user.value = baseUser;
-      await saveUserToFirestore(baseUser);
-    }
-    
-    // Store authenticated user data in localStorage for faster loading on refresh
-    if (import.meta.client && user.value) {
-      localStorage.setItem('nuxt-auth-user', JSON.stringify(user.value));
+    try {
+      // Try to get user data from Firestore
+      const firestoreData = await loadUserFromFirestore(firebaseUser.uid);
+      
+      if (firestoreData) {
+        // Merge data, prioritizing Firestore data over Firebase Auth data
+        user.value = {
+          ...baseUser,
+          ...firestoreData,
+          // Always keep id and email from Auth for security
+          id: baseUser.id,
+          email: baseUser.email
+        };
+      } else {
+        // Use only Firebase Auth data and save it to Firestore
+        user.value = baseUser;
+        await saveUserToFirestore(baseUser);
+      }
+      
+      // Store authenticated user data in localStorage for faster loading on refresh
+      if (import.meta.client && user.value) {
+        localStorage.setItem('nuxt-auth-user', JSON.stringify(user.value));
+      }
+    } catch (err) {
+      // Clear user value if initialization fails
+      user.value = null;
+      if (import.meta.client) {
+        localStorage.removeItem('nuxt-auth-user');
+      }
+      throw err; // Re-throw to be handled by the caller
     }
   };
 
@@ -230,17 +292,47 @@ export const useAuthStore = defineStore('auth', () => {
         id: firebaseUser.uid,
         name: name,
         email: firebaseUser.email || email,
-        photoURL: firebaseUser.photoURL || undefined
+        photoURL: null
       };
       
-      // Set user in store
-      user.value = newUser;
-      
-      // Save to Firestore
+      // Save to Firestore first before setting in store
       await saveUserToFirestore(newUser);
       
+      // Only set user in store if Firestore save was successful
+      user.value = newUser;
+      
+      // Store in localStorage for faster loading on refresh
+      if (import.meta.client) {
+        localStorage.setItem('nuxt-auth-user', JSON.stringify(newUser));
+      }
+
+      // Wait a bit to ensure auth state is fully propagated
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Create welcome message after user is fully authenticated
+      if (currentUser.value) {
+        await createWelcomeMessage(newUser.id);
+      }
+      
     } catch (err) {
+      // If there's an error, we need to clean up
       console.error('Registration error:', err);
+      
+      // Clear any partial user state
+      user.value = null;
+      if (import.meta.client) {
+        localStorage.removeItem('nuxt-auth-user');
+      }
+      
+      // Try to sign out the user if they were partially created
+      try {
+        const { $firebaseAuth } = useNuxtApp();
+        if ($firebaseAuth.currentUser) {
+          await signOut($firebaseAuth);
+        }
+      } catch (signOutErr) {
+        console.error('Error cleaning up failed registration:', signOutErr);
+      }
       
       const firebaseError = err as AuthError;
       if (firebaseError.code === 'auth/email-already-in-use') {
@@ -258,7 +350,7 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = false;
     }
   };
- 
+
   /**
    * Logout the user
    */
@@ -305,36 +397,31 @@ export const useAuthStore = defineStore('auth', () => {
         return { user: null, unsubscribe: () => {} };
       }
       
-      const nuxtApp = useNuxtApp();
+      const { $firebaseAuth } = useNuxtApp();
       
-      // Check if Firebase Auth is available
-      if (!nuxtApp.$firebaseAuth) {
-        console.warn(`${context} Firebase Auth not yet initialized in checkAuth`);
+      // Use VueFire's useCurrentUser instead of direct Firebase Auth
+      if (!currentUser.value) {
+        console.log(`${context} No user currently signed in`);
         isLoading.value = false;
         return { user: null, unsubscribe: () => {} };
       }
       
-      const { $firebaseAuth } = nuxtApp;
-      
-      console.log(`${context} Setting up auth state listener`);
-      
-      return new Promise((resolve) => {
-        // Set up persistent auth state listener
-        const unsubscribe = onAuthStateChanged($firebaseAuth, async (firebaseUser) => {
-          if (firebaseUser) {
-            // User is signed in - load merged data
-            await setUserWithMergedData(firebaseUser);
-            console.log(`${context} Auth state changed: User signed in`, user.value?.name);
-          } else {
-            // User is signed out
-            console.log(`${context} Auth state changed: User signed out`);
-            user.value = null;
-          }
-          
-          isLoading.value = false;
-          resolve({ user: user.value, unsubscribe });
-        });
+      // Set up persistent auth state listener
+      const unsubscribe = onAuthStateChanged($firebaseAuth, async (firebaseUser) => {
+        if (firebaseUser) {
+          // User is signed in - load merged data
+          await setUserWithMergedData(firebaseUser);
+          console.log(`${context} Auth state changed: User signed in`, user.value?.name);
+        } else {
+          // User is signed out
+          console.log(`${context} Auth state changed: User signed out`);
+          user.value = null;
+        }
+        
+        isLoading.value = false;
       });
+      
+      return { user: user.value, unsubscribe };
     } catch (err) {
       console.error(`${context} Auth check error:`, err);
       isLoading.value = false;
@@ -377,25 +464,8 @@ export const useAuthStore = defineStore('auth', () => {
         return null;
       }
       
-      const nuxtApp = useNuxtApp();
-      
-      // Check if Firebase Auth is available
-      if (!nuxtApp.$firebaseAuth) {
-        console.warn(`${context} Firebase Auth not yet initialized`);
-        isLoading.value = false;
-        return null;
-      }
-      
-      const { $firebaseAuth } = nuxtApp;
-      
-      // Check if user is already logged in (e.g., from a previous session)
-      const currentUser = $firebaseAuth.currentUser;
-      
-      if (currentUser) {
-        // User is already signed in - load merged data
-        await setUserWithMergedData(currentUser);
-        console.log(`${context} User already signed in:`, user.value?.name);
-      } else {
+      // Use VueFire's useCurrentUser instead of direct Firebase Auth
+      if (!currentUser.value) {
         // If we loaded a cached user but Firebase says we're not logged in,
         // clear the cached user to prevent stale data
         if (user.value && import.meta.client) {
@@ -404,7 +474,13 @@ export const useAuthStore = defineStore('auth', () => {
           localStorage.removeItem('nuxt-auth-user');
         }
         console.log(`${context} No user currently signed in`);
+        isLoading.value = false;
+        return null;
       }
+      
+      // User is already signed in - load merged data
+      await setUserWithMergedData(currentUser.value);
+      console.log(`${context} User already signed in:`, user.value?.name);
       
       isLoading.value = false;
       return user.value;

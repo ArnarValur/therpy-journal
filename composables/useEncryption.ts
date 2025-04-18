@@ -25,8 +25,12 @@ export function useEncryption() {
    */
   const encrypt = (data: string): string => {
     try {
+      if (!data) return '';
+      
       const key = getUserEncryptionKey();
-      return CryptoJS.AES.encrypt(data, key).toString();
+      // Convert the string to UTF-8 encoded WordArray before encryption
+      const utf8Data = CryptoJS.enc.Utf8.parse(data);
+      return CryptoJS.AES.encrypt(utf8Data, key).toString();
     } catch (error) {
       console.error('Encryption error:', error);
       throw new Error('Failed to encrypt data');
@@ -40,9 +44,21 @@ export function useEncryption() {
    */
   const decrypt = (encryptedData: string): string => {
     try {
+      if (!encryptedData) return '';
+      
       const key = getUserEncryptionKey();
+      // Decrypt the data
       const bytes = CryptoJS.AES.decrypt(encryptedData, key);
-      return bytes.toString(CryptoJS.enc.Utf8);
+      
+      // Try to convert to UTF-8 string, if it fails, the data might be corrupted
+      try {
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        if (!decrypted) throw new Error('Decryption resulted in empty string');
+        return decrypted;
+      } catch (e) {
+        console.error('UTF-8 decoding error:', e);
+        throw new Error('Failed to decode decrypted data');
+      }
     } catch (error) {
       console.error('Decryption error:', error);
       throw new Error('Failed to decrypt data');

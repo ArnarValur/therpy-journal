@@ -1,13 +1,18 @@
 // composables/useJournalEntry.ts
-import { collection, query, getDocs, addDoc, updateDoc, doc, getDoc, orderBy, Timestamp, deleteDoc } from 'firebase/firestore';
-import { ref, computed } from 'vue';
+import { collection, query, addDoc, updateDoc, doc, orderBy, Timestamp, deleteDoc } from 'firebase/firestore';
+import type { Firestore, DocumentData } from 'firebase/firestore';
+import { ref, computed, watch } from 'vue';
+import { useFirestore, useCollection, useDocument } from 'vuefire';
+import { useAuthStore } from '~/stores/auth';
+import { useEncryption } from '~/composables/useEncryption';
+import { until } from '@vueuse/core';
 
 export interface JournalEntry {
   id?: string;
   title: string;
   content: string;
-  createdAt: Date | Timestamp;
-  updatedAt: Date | Timestamp;
+  createdAt: Date;
+  updatedAt: Date;
   userId: string;
   tags?: string[];
   sentiments?: Record<string, number>;
@@ -21,33 +26,54 @@ type FirebaseDocData = {
   };
 };
 
-// Type for the encrypted sentiments structure
-type EncryptedSentiments = {
-  data: string;
-};
-
-export function useJournalEntry() {
-  const { $firebaseDb } = useNuxtApp();
+export const useJournalEntry = () => {
+  const firestore = useFirestore();
+  const auth = useAuthStore();
   const { encrypt, decrypt } = useEncryption();
-  const authStore = useAuthStore();
-  
+  const userId = computed(() => auth.user?.id);
+  const error = ref<Error | null>(null);
   const isLoading = ref(false);
-  const error = ref<string | null>(null);
   const entries = ref<JournalEntry[]>([]);
   const entry = ref<JournalEntry | null>(null);
-  
   const currentEntry = ref<JournalEntry | null>(null);
   
-  // Get the authenticated user ID
-  const userId = computed(() => authStore.user?.id);
+  // Use VueFire's useCollection for reactive data
+  const { data: journalEntries, pending: entriesPending } = useCollection(
+    computed(() => {
+      if (!userId.value) return null;
+      return query(
+        collection(firestore as Firestore, 'users', userId.value, 'journalEntries'),
+        orderBy('createdAt', 'desc')
+      );
+    })
+  );
+  
+  // Watch for changes in the collection data
+  watch(journalEntries, (newEntries) => {
+    if (newEntries) {
+      entries.value = newEntries.map(entry => ({
+        ...entry,
+        id: entry.id,
+        title: decrypt(entry.title),
+        content: decrypt(entry.content),
+        tags: entry.tags ? entry.tags.map((tag: string) => decrypt(tag)) : [],
+        sentiments: entry.sentiments ? JSON.parse(decrypt(entry.sentiments.data)) : undefined,
+        createdAt: entry.createdAt instanceof Timestamp ? entry.createdAt.toDate() : entry.createdAt,
+        updatedAt: entry.updatedAt instanceof Timestamp ? entry.updatedAt.toDate() : entry.updatedAt,
+        userId: userId.value || ''
+      }));
+    } else {
+      entries.value = [];
+    }
+  });
   
   /**
    * Create a new journal entry
    * @param entry The journal entry to create
    */
-  const createEntry = async (entry: Omit<JournalEntry, 'userId' | 'createdAt' | 'updatedAt'>) => {
+  const createEntry = async (entry: Omit<JournalEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     if (!userId.value) {
-      error.value = 'You must be authenticated to create a journal entry';
+      error.value = new Error('You must be authenticated to create a journal entry');
       return null;
     }
     
@@ -55,110 +81,32 @@ export function useJournalEntry() {
     error.value = null;
     
     try {
-      // Encrypt the content before storing
-      const encryptedContent = encrypt(entry.content);
-      const encryptedTitle = encrypt(entry.title);
-      
-      // Encrypt sentiments if they exist
-      let encryptedSentiments: { data: string } | Record<string, number> = {};
-      if (entry.sentiments && Object.keys(entry.sentiments).length > 0) {
-        // Convert sentiments to JSON string and encrypt
-        encryptedSentiments = {
-          data: encrypt(JSON.stringify(entry.sentiments))
-        } as EncryptedSentiments;
-      }
-      
-      // Encrypt tags if they exist
-      let encryptedTags: string[] = [];
-      if (entry.tags && entry.tags.length > 0) {
-        // Encrypt each tag individually
-        encryptedTags = entry.tags.map(tag => encrypt(tag));
-      }
-      
       const now = new Date();
-      const newEntry = {
-        title: encryptedTitle,
-        content: encryptedContent,
+      const entryData: FirebaseDocData = {
+        content: encrypt(entry.content),
+        title: encrypt(entry.title),
         createdAt: now,
         updatedAt: now,
         userId: userId.value,
-        tags: encryptedTags,
-        sentiments: encryptedSentiments,
-        isDraft: entry.isDraft ?? true // Default to true if not specified
+        isDraft: entry.isDraft || false
       };
       
-      const docRef = await addDoc(collection($firebaseDb, 'users', userId.value, 'journalEntries'), newEntry);
+      if (entry.tags) {
+        entryData.tags = entry.tags.map(tag => encrypt(tag));
+      }
       
-      // Return the created entry with ID
-      return {
-        id: docRef.id,
-        ...entry,
-        userId: userId.value,
-        createdAt: now,
-        updatedAt: now
-      };
+      if (entry.sentiments) {
+        entryData.sentiments = {
+          data: encrypt(JSON.stringify(entry.sentiments))
+        };
+      }
+      
+      const docRef = await addDoc(collection(firestore as Firestore, 'users', userId.value, 'journalEntries'), entryData);
+      return { id: docRef.id };
     } catch (err) {
       console.error('Error creating journal entry:', err);
-      error.value = 'Failed to create journal entry';
+      error.value = new Error('Failed to create journal entry');
       return null;
-    } finally {
-      isLoading.value = false;
-    }
-  };
-  
-  /**
-   * Update an existing journal entry
-   * @param id The ID of the entry to update
-   * @param updates The updates to apply
-   */
-  const updateEntry = async (id: string, updates: Partial<Omit<JournalEntry, 'userId' | 'createdAt' | 'updatedAt'>>) => {
-    if (!userId.value) {
-      error.value = 'You must be authenticated to update a journal entry';
-      return false;
-    }
-    
-    isLoading.value = true;
-    error.value = null;
-    
-    try {
-      const entryRef = doc($firebaseDb, 'users', userId.value, 'journalEntries', id);
-      
-      // Create update object with encrypted data
-      const updateData: FirebaseDocData = {
-        updatedAt: new Date()
-      };
-      
-      if (updates.content !== undefined) {
-        updateData.content = encrypt(updates.content);
-      }
-      
-      if (updates.title !== undefined) {
-        updateData.title = encrypt(updates.title);
-      }
-      
-      if (updates.tags !== undefined) {
-        // Encrypt each tag individually
-        updateData.tags = updates.tags.map(tag => encrypt(tag));
-      }
-      
-      if (updates.sentiments !== undefined) {
-        // Encrypt sentiments
-        updateData.sentiments = {
-          data: encrypt(JSON.stringify(updates.sentiments))
-        } as EncryptedSentiments;
-      }
-      
-      // Add isDraft field to updates if it's defined
-      if (updates.isDraft !== undefined) {
-        updateData.isDraft = updates.isDraft;
-      }
-      
-      await updateDoc(entryRef, updateData);
-      return true;
-    } catch (err) {
-      console.error('Error updating journal entry:', err);
-      error.value = 'Failed to update journal entry';
-      return false;
     } finally {
       isLoading.value = false;
     }
@@ -170,7 +118,7 @@ export function useJournalEntry() {
    */
   const getEntry = async (id: string) => {
     if (!userId.value) {
-      error.value = 'You must be authenticated to retrieve a journal entry';
+      error.value = new Error('You must be authenticated to retrieve a journal entry');
       return null;
     }
     
@@ -178,57 +126,43 @@ export function useJournalEntry() {
     error.value = null;
     
     try {
-      const entryRef = doc($firebaseDb, 'users', userId.value, 'journalEntries', id);
-      const entrySnap = await getDoc(entryRef);
+      const docRef = doc(firestore as Firestore, 'users', userId.value, 'journalEntries', id);
+      const { data: entryData, pending } = useDocument<DocumentData>(docRef);
       
-      if (!entrySnap.exists()) {
-        error.value = 'Journal entry not found';
+      // Wait for the document to be loaded
+      await until(pending).toBe(false);
+      
+      if (!entryData.value) {
+        error.value = new Error('Journal entry not found');
         return null;
       }
       
-      const data = entrySnap.data() as JournalEntry;
-      
-      // Decrypt the content and title
+      // Create base entry with non-encrypted fields
       const decryptedData: JournalEntry = {
-        id: entrySnap.id,
-        ...data,
-        content: data.content ? decrypt(data.content) : '',
-        title: data.title ? decrypt(data.title) : '',
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : data.updatedAt,
-        tags: []  // Initialize with empty array, will be populated below
+        id,
+        title: decrypt(entryData.value.title),
+        content: decrypt(entryData.value.content),
+        createdAt: entryData.value.createdAt instanceof Timestamp ? entryData.value.createdAt.toDate() : entryData.value.createdAt,
+        updatedAt: entryData.value.updatedAt instanceof Timestamp ? entryData.value.updatedAt.toDate() : entryData.value.updatedAt,
+        userId: userId.value,
+        isDraft: entryData.value.isDraft || false
       };
       
-      // Decrypt tags if they exist
-      if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
-        try {
-          decryptedData.tags = data.tags.map(tag => decrypt(tag));
-        } catch (e) {
-          console.error('Error decrypting tags:', e);
-          decryptedData.tags = [];
-        }
+      // Add decrypted tags if they exist
+      if (entryData.value.tags) {
+        decryptedData.tags = entryData.value.tags.map((tag: string) => decrypt(tag));
       }
       
-      // Decrypt sentiments if they exist in the new encrypted format
-      if (data.sentiments && typeof data.sentiments === 'object' && 'data' in data.sentiments) {
-        try {
-          // Cast sentiments to the right type to access data property
-          const encryptedSentiments = data.sentiments as unknown as EncryptedSentiments;
-          const decryptedSentiments = decrypt(encryptedSentiments.data);
-          decryptedData.sentiments = JSON.parse(decryptedSentiments);
-        } catch (e) {
-          console.error('Error decrypting sentiments:', e);
-          decryptedData.sentiments = {};
-        }
-      } else {
-        // Handle older format or empty sentiments
-        decryptedData.sentiments = data.sentiments || {};
+      // Add decrypted sentiments if they exist
+      if (entryData.value.sentiments?.data) {
+        decryptedData.sentiments = JSON.parse(decrypt(entryData.value.sentiments.data));
       }
       
+      entry.value = decryptedData;
       return decryptedData;
     } catch (err) {
-      console.error('Error retrieving journal entry:', err);
-      error.value = 'Failed to retrieve journal entry';
+      console.error('Error getting journal entry:', err);
+      error.value = new Error('Failed to get journal entry');
       return null;
     } finally {
       isLoading.value = false;
@@ -236,74 +170,53 @@ export function useJournalEntry() {
   };
   
   /**
-   * Load all journal entries for the current user
+   * Update a journal entry
+   * @param id The ID of the entry to update
+   * @param updates The updates to apply
    */
-  const loadEntries = async () => {
+  const updateEntry = async (id: string, updates: Partial<JournalEntry>) => {
     if (!userId.value) {
-      error.value = 'You must be authenticated to load journal entries';
-      return [];
+      error.value = new Error('You must be authenticated to update a journal entry');
+      return false;
     }
     
     isLoading.value = true;
     error.value = null;
-    entries.value = [];
     
     try {
-      const entriesRef = collection($firebaseDb, 'users', userId.value, 'journalEntries');
-      const entriesQuery = query(entriesRef, orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(entriesQuery);
+      const docRef = doc(firestore as Firestore, 'users', userId.value, 'journalEntries', id);
+      const updateData: FirebaseDocData = {
+        updatedAt: new Date()
+      };
       
-      // Process each entry, decrypting content
-      const loadedEntries: JournalEntry[] = [];
+      if (updates.title !== undefined) {
+        updateData.title = encrypt(updates.title);
+      }
       
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as JournalEntry;
-        
-        const decryptedEntry: JournalEntry = {
-          id: doc.id,
-          ...data,
-          content: data.content ? decrypt(data.content) : '',
-          title: data.title ? decrypt(data.title) : '',
-          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : data.createdAt,
-          updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : data.updatedAt,
-          tags: []  // Initialize with empty array, will be populated below
+      if (updates.content !== undefined) {
+        updateData.content = encrypt(updates.content);
+      }
+      
+      if (updates.tags !== undefined) {
+        updateData.tags = updates.tags.map(tag => encrypt(tag));
+      }
+      
+      if (updates.sentiments !== undefined) {
+        updateData.sentiments = {
+          data: encrypt(JSON.stringify(updates.sentiments))
         };
-        
-        // Decrypt tags if they exist
-        if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
-          try {
-            decryptedEntry.tags = data.tags.map(tag => decrypt(tag));
-          } catch (e) {
-            console.error('Error decrypting tags:', e);
-            decryptedEntry.tags = [];
-          }
-        }
-        
-        // Decrypt sentiments if they exist in the new encrypted format
-        if (data.sentiments && typeof data.sentiments === 'object' && 'data' in data.sentiments) {
-          try {
-            // Cast sentiments to the right type to access data property
-            const encryptedSentiments = data.sentiments as unknown as EncryptedSentiments;
-            const decryptedSentiments = decrypt(encryptedSentiments.data);
-            decryptedEntry.sentiments = JSON.parse(decryptedSentiments);
-          } catch (e) {
-            console.error('Error decrypting sentiments:', e);
-            decryptedEntry.sentiments = {};
-          }
-        } else {
-          // Handle older format or empty sentiments
-          decryptedEntry.sentiments = data.sentiments || {};
-        }
-        
-        loadedEntries.push(decryptedEntry);
-      });
+      }
       
-      entries.value = loadedEntries;
-      return loadedEntries;
+      if (updates.isDraft !== undefined) {
+        updateData.isDraft = updates.isDraft;
+      }
+      
+      await updateDoc(docRef, updateData);
+      return true;
     } catch (err) {
-      console.error('Error loading journal entries:', err);
-      error.value = 'Failed to load journal entries';
-      return [];
+      console.error('Error updating journal entry:', err);
+      error.value = new Error('Failed to update journal entry');
+      return false;
     } finally {
       isLoading.value = false;
     }
@@ -315,7 +228,7 @@ export function useJournalEntry() {
    */
   const deleteEntry = async (id: string) => {
     if (!userId.value) {
-      error.value = 'You must be authenticated to delete a journal entry';
+      error.value = new Error('You must be authenticated to delete a journal entry');
       return false;
     }
     
@@ -323,15 +236,12 @@ export function useJournalEntry() {
     error.value = null;
     
     try {
-      const entryRef = doc($firebaseDb, 'users', userId.value, 'journalEntries', id);
-      await deleteDoc(entryRef);
-      
-      // Update local entries list
-      entries.value = entries.value.filter(entry => entry.id !== id);
+      const docRef = doc(firestore as Firestore, 'users', userId.value, 'journalEntries', id);
+      await deleteDoc(docRef);
       return true;
     } catch (err) {
       console.error('Error deleting journal entry:', err);
-      error.value = 'Failed to delete journal entry';
+      error.value = new Error('Failed to delete journal entry');
       return false;
     } finally {
       isLoading.value = false;
@@ -347,6 +257,33 @@ export function useJournalEntry() {
   };
   
   /**
+   * Load all journal entries
+   * This is now handled automatically by VueFire's useCollection,
+   * but we'll keep this method for backwards compatibility
+   */
+  const loadEntries = async () => {
+    if (!userId.value) {
+      error.value = new Error('You must be authenticated to load journal entries');
+      return [];
+    }
+    
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      // The entries are already loaded reactively by useCollection
+      // Just return the current entries
+      return entries.value;
+    } catch (err) {
+      console.error('Error loading journal entries:', err);
+      error.value = new Error('Failed to load journal entries');
+      return [];
+    } finally {
+      isLoading.value = false;
+    }
+  };
+  
+  /**
    * Load a single journal entry by ID
    * @param id The ID of the entry to load
    */
@@ -359,18 +296,23 @@ export function useJournalEntry() {
     return result;
   };
   
+  const _filterByTag = (_tag: string) => {
+    // ... existing code ...
+  }
+  
   return {
     entries,
     entry,
     currentEntry,
-    isLoading,
     error,
+    isLoading,
+    pending: entriesPending,
     createEntry,
-    updateEntry,
     getEntry,
-    loadEntry,
-    loadEntries,
+    updateEntry,
     deleteEntry,
-    setCurrentEntry
+    setCurrentEntry,
+    loadEntries,
+    loadEntry
   };
-} 
+}; 

@@ -1,6 +1,8 @@
 // composables/useFirebaseAuth.ts
 import { onAuthStateChanged } from 'firebase/auth';
 import { useAuthStore } from '~/stores/auth';
+import { useNuxtApp } from '#app';
+import type { Auth } from 'firebase/auth';
 
 /**
  * Composable for Firebase auth utilities
@@ -10,6 +12,7 @@ import { useAuthStore } from '~/stores/auth';
 export function useFirebaseAuth() {
   const { $firebaseAuth } = useNuxtApp();
   const authStore = useAuthStore();
+  const auth = $firebaseAuth as Auth;
   
   /**
    * Manually set up an auth state listener
@@ -43,21 +46,18 @@ export function useFirebaseAuth() {
   const getCurrentUser = () => $firebaseAuth.currentUser;
   
   /**
-   * Checks if the current token is valid and not expired
-   * Useful for detecting session timeout and forcing logout
-   * @returns Promise resolving to boolean indicating if token is valid
+   * Check if the current user's token is valid
    */
   const isTokenValid = async () => {
-    const user = getCurrentUser();
-    if (!user) return false;
-    
     try {
-      // Force token refresh if needed
+      const user = auth.currentUser;
+      if (!user) return false;
+
+      // Force token refresh and check if successful
       await user.getIdToken(true);
       return true;
     } catch (error) {
-      console.error('Token validation error:', error);
-      // If there's an error, the token is likely invalid
+      console.error('Token validation failed:', error);
       return false;
     }
   };
@@ -66,7 +66,7 @@ export function useFirebaseAuth() {
    * Return the store state
    */
   return {
-    auth: $firebaseAuth,
+    auth,
     setupAuthListener,
     getAuth,
     getCurrentUser,

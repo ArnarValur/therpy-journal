@@ -5,9 +5,9 @@ export interface TiptapContent {
     content?: TiptapContent[];
     marks?: Array<{
       type: string;
-      attrs?: Record<string, any>;
+      attrs?: Record<string, unknown>;
     }>;
-    attrs?: Record<string, any>;
+    attrs?: Record<string, unknown>;
     text?: string;
   }>;
 }

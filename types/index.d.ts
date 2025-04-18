@@ -1,5 +1,3 @@
-import type { JSONContent } from '@tiptap/core';
-
 export interface TiptapNode {
   type: string;
   content?: TiptapNode[];

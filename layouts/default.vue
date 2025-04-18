@@ -1,6 +1,6 @@
 <!-- layouts/default.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useLogout } from '~/composables/useLogout';
 import { useUserPreferences } from '~/composables/useUserPreferences';
 import { useFeatureFlagsStore } from '~/stores/featureFlags';
@@ -13,11 +13,6 @@ const showLogoutConfirm = ref(false);
 const showSettingsModal = ref(false);
 const authStore = useAuthStore();
 const featureFlagsStore = useFeatureFlagsStore();
-
-// Load feature flags when component mounts
-onMounted(async () => {
-  await featureFlagsStore.loadFeatureFlags();
-});
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;

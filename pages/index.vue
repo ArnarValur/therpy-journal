@@ -1,6 +1,6 @@
 <!-- pages/index.vue -->
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import EntryButton from '~/components/button/EntryButton.vue';
 

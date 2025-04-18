@@ -42,9 +42,16 @@ const onRegister = async () => {
   try {
     startLoading('register', 'Creating your account...');
     await authStore.register(name.value, email.value, password.value);
-    await router.push('/');
+    
+    // Only navigate if registration was successful and we have a user
+    if (authStore.user) {
+      await router.push('/');
+    } else {
+      logError('Failed to create account. Please try again.', 'auth');
+    }
   } catch (error) {
     logError(error, 'auth');
+    // Stay on registration page on error
   } finally {
     endLoading('register');
   }
@@ -54,7 +61,13 @@ const onGoogleRegister = async () => {
   try {
     startLoading('google-register', 'Signing up with Google...');
     await authStore.loginWithGoogle();
-    await router.push('/');
+    
+    // Only navigate if login was successful and we have a user
+    if (authStore.user) {
+      await router.push('/');
+    } else {
+      logError('Failed to sign in with Google. Please try again.', 'auth');
+    }
   } catch (error) {
     // Only show error if it's not a user cancellation
     if (error && typeof error === 'object' && 'code' in error) {
@@ -65,6 +78,7 @@ const onGoogleRegister = async () => {
     } else {
       logError(error, 'auth');
     }
+    // Stay on registration page on error
   } finally {
     endLoading('google-register');
   }

@@ -12,26 +12,29 @@ import {
   type User
 } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
+import { useFirestore, useDocument } from 'vuefire';
 import { useAuthStore } from '~/stores/auth';
 
 /**
  * Composable for updating user profile information
  */
 export default function useUpdateUserProfile() {
-  const { $firebaseAuth, $firebaseDb } = useNuxtApp();
+  const { $firebaseAuth } = useNuxtApp();
+  const db = useFirestore();
   const authStore = useAuthStore();
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const success = ref<string | null>(null);
   
   /**
-   * Sync user data with Firestore
+   * Sync user data with Firestore using VueFire
    */
   const syncUserWithFirestore = async (userId: string, data: Record<string, string | null | undefined>) => {
     try {
-      // If Firestore is available, update the user document
-      if ($firebaseDb) {
-        const userRef = doc($firebaseDb, 'users', userId);
+      const userRef = doc(db, 'users', userId);
+      const { data: userData } = useDocument(userRef);
+      
+      if (userData.value) {
         await updateDoc(userRef, data);
       }
     } catch (err) {
@@ -105,12 +108,11 @@ export default function useUpdateUserProfile() {
       throw new Error('Cannot re-authenticate: missing credentials');
     }
   };
-  
+
   /**
    * Update user email
-   * Requires recent authentication
    */
-  const updateUserEmail = async (newEmail: string, password = '') => {
+  const updateUserEmail = async (newEmail: string, password: string) => {
     isLoading.value = true;
     error.value = null;
     success.value = null;
@@ -124,7 +126,7 @@ export default function useUpdateUserProfile() {
       // Re-authenticate user before email change
       await reauthenticateUser(currentUser, password);
       
-      // Update email
+      // Update email in Firebase Auth
       await updateEmail(currentUser, newEmail);
       
       // Update store
@@ -142,15 +144,13 @@ export default function useUpdateUserProfile() {
       
       const firebaseError = err as AuthError;
       if (firebaseError.code === 'auth/requires-recent-login') {
-        error.value = 'Please sign in again before changing your email';
-      } else if (firebaseError.code === 'auth/invalid-email') {
-        error.value = 'Invalid email format';
+        error.value = 'Please log out and log back in to change your email';
       } else if (firebaseError.code === 'auth/email-already-in-use') {
         error.value = 'This email is already in use';
+      } else if (firebaseError.code === 'auth/invalid-email') {
+        error.value = 'Invalid email format';
       } else if (firebaseError.code === 'auth/wrong-password') {
         error.value = 'Incorrect password';
-      } else if (firebaseError.code === 'auth/popup-closed-by-user') {
-        error.value = 'Authentication cancelled. Please try again.';
       } else {
         error.value = 'Failed to update email. Please try again.';
       }
@@ -163,7 +163,6 @@ export default function useUpdateUserProfile() {
   
   /**
    * Update user password
-   * Requires recent authentication
    */
   const updateUserPassword = async (currentPassword: string, newPassword: string) => {
     isLoading.value = true;
@@ -174,11 +173,6 @@ export default function useUpdateUserProfile() {
       const currentUser = $firebaseAuth.currentUser;
       if (!currentUser) {
         throw new Error('No authenticated user found');
-      }
-      
-      // Check if password update is applicable
-      if (isGoogleUser(currentUser) && !currentUser.email) {
-        throw new Error('Google users without an email cannot update their password');
       }
       
       // Re-authenticate user before password change
@@ -194,13 +188,11 @@ export default function useUpdateUserProfile() {
       
       const firebaseError = err as AuthError;
       if (firebaseError.code === 'auth/requires-recent-login') {
-        error.value = 'Please sign in again before changing your password';
+        error.value = 'Please log out and log back in to change your password';
       } else if (firebaseError.code === 'auth/weak-password') {
         error.value = 'Password is too weak';
       } else if (firebaseError.code === 'auth/wrong-password') {
-        error.value = 'Incorrect current password';
-      } else if (firebaseError.code === 'auth/popup-closed-by-user') {
-        error.value = 'Authentication cancelled. Please try again.';
+        error.value = 'Current password is incorrect';
       } else {
         error.value = 'Failed to update password. Please try again.';
       }

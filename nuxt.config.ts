@@ -14,7 +14,25 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     '@nuxt/eslint',
     '@nuxtjs/color-mode',
-    'nuxt-tiptap-editor'
+    'nuxt-tiptap-editor',
+    ['nuxt-vuefire', {
+      config: {
+        apiKey: process.env.FIREBASE_API_KEY,
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.FIREBASE_APP_ID
+      },
+      auth: true,
+      admin: {
+        serviceAccount: {
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY
+        }
+      }
+    }]
   ],
   colorMode: {
     preference: 'system', // default value of $colorMode.preference
@@ -44,14 +62,22 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
+    // Private keys that are exposed to the server
+    firebaseAdmin: {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY,
+    },
+    // Public keys that are exposed to the client
     public: {
-      firebaseApiKey: 'AIzaSyCoUiNnx-yJ6vVsDqvk0nJq-05BaJfJGFE',
-      firebaseAuthDomain: 'therapy-journal-18762.firebaseapp.com',
-      firebaseProjectId: 'therapy-journal-18762',
-      firebaseStorageBucket: 'therapy-journal-18762.firebasestorage.app',
-      firebaseMessagingSenderId: '642768975271',
-      firebaseAppId: '1:642768975271:web:f9ad37c4a4a45e0318f282',
-      firebaseMeasurementId: 'G-K10N6BT22V'
+      firebase: {
+        apiKey: process.env.FIREBASE_API_KEY,
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.FIREBASE_APP_ID,
+      }
     }
   },
   typescript: {
