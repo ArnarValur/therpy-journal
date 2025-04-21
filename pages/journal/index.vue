@@ -9,7 +9,11 @@ import DeleteButton from '~/components/buttons/DeleteButton.vue';
 import ConfirmationModal from '~/components/modals/ConfirmationModal.vue';
 import { useActionHandler } from '~/composables/useActionHandler';
 import { useModalSystem } from '~/composables/useModalSystem';
+import { useFeatureFlagsStore } from '~/stores/featureFlags';
 useModalSystem();
+
+// Feature flags store
+const featureFlagsStore = useFeatureFlagsStore();
 
 // Get required composables
 const { loadEntries, entries, isLoading, error, deleteEntry } = useJournalEntry();
@@ -345,6 +349,7 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
             <div class="flex items-start space-x-3">
               <!-- Sentiment circle -->
               <div 
+                v-if="featureFlagsStore.showSentimentBadge"
                 class="w-3 h-3 rounded-full mt-2 flex-shrink-0" 
                 :class="getSentimentClass(entry)"
               />

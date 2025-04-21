@@ -5,6 +5,8 @@ import { useLogout } from '~/composables/useLogout';
 import { useUserPreferences } from '~/composables/useUserPreferences';
 import { useFeatureFlagsStore } from '~/stores/featureFlags';
 import SettingsModal from '~/components/modals/SettingsModal.vue';
+import FeedbackModal from '~/components/modals/FeedbackModal.vue';
+import { useFeedback } from '~/composables/useFeedback';
 
 // Get sidebar state from the user preferences composable
 const { sidebarOpen, toggleSidebar } = useUserPreferences();
@@ -12,8 +14,10 @@ const isMobileMenuOpen = ref(false);
 const { logout, isLoggingOut } = useLogout();
 const showLogoutConfirm = ref(false);
 const showSettingsModal = ref(false);
+const showFeedbackModal = ref(false);
 const authStore = useAuthStore();
 const featureFlagsStore = useFeatureFlagsStore();
+const { isAdmin } = useFeedback();
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value;
@@ -53,6 +57,17 @@ const handleNavigation = () => {
   if (isMobileMenuOpen.value) {
     isMobileMenuOpen.value = false;
   }
+};
+
+const openFeedbackModal = () => {
+  showFeedbackModal.value = true;
+  if (isMobileMenuOpen.value) {
+    isMobileMenuOpen.value = false;
+  }
+};
+
+const closeFeedbackModal = () => {
+  showFeedbackModal.value = false;
 };
 </script>
 
@@ -174,7 +189,6 @@ const handleNavigation = () => {
                   <span :class="{ 'md:hidden': !sidebarOpen }">Therapist</span>
                 </NuxtLink>
               </li>
-              <!-- Settings -->
               
             </ul>
           </nav>
@@ -191,6 +205,30 @@ const handleNavigation = () => {
                   <i class="ri-settings-3-line text-lg" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
                   <span :class="{ 'md:hidden': !sidebarOpen }">Settings</span>
                 </button>
+              </li>
+              <!-- Feedback -->
+              <li>
+                <button 
+                  class="nav-link flex items-center px-4 py-2 w-full"
+                  :class="{ 'md:justify-center': !sidebarOpen }"
+                  @click="openFeedbackModal"
+                >
+                  <i class="ri-feedback-line text-lg" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
+                  <span :class="{ 'md:hidden': !sidebarOpen }">Feedback</span>
+                </button>
+              </li>
+              <!-- Admin Section -->
+              <li v-if="isAdmin">
+                <NuxtLink 
+                  to="/admin/" 
+                  class="nav-link flex items-center px-4 py-2"
+                  :class="{ 'md:justify-center': !sidebarOpen }"
+                  active-class="nav-link-active"
+                  @click="handleNavigation"
+                >
+                  <i class="ri-admin-line text-lg" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
+                  <span :class="{ 'md:hidden': !sidebarOpen }">Admin</span>
+                </NuxtLink>
               </li>
               <li>
                 <button 
@@ -241,6 +279,12 @@ const handleNavigation = () => {
     <SettingsModal 
       :is-open="showSettingsModal" 
       @close="closeSettingsModal" 
+    />
+
+    <!-- Feedback Modal -->
+    <FeedbackModal 
+      :is-open="showFeedbackModal" 
+      @close="closeFeedbackModal" 
     />
   </div>
 </template>

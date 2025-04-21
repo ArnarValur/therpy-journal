@@ -11,7 +11,11 @@ import DeleteButton from '~/components/buttons/DeleteButton.vue';
 import ConfirmationModal from '~/components/modals/ConfirmationModal.vue';
 import { useActionHandler } from '~/composables/useActionHandler';
 import { useModalSystem } from '~/composables/useModalSystem';
+import { useFeatureFlagsStore } from '~/stores/featureFlags';
 useModalSystem();
+
+// Feature flags store
+const featureFlagsStore = useFeatureFlagsStore();
 
 // Get required composables
 const { loadEntry, entry, isLoading, error, deleteEntry } = useJournalEntry();
@@ -151,6 +155,7 @@ const requestDeleteEntry = (event: Event, id: string) => {
         <div class="flex justify-between items-start mb-6">
           <div class="flex items-start space-x-3">
             <div 
+              v-if="featureFlagsStore.showSentimentBadge"
               class="w-3 h-3 rounded-full mt-2 flex-shrink-0" 
               :class="getSentimentClass(entry)"
             />

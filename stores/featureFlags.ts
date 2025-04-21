@@ -16,7 +16,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   
   // Set default values if document doesn't exist
   const defaultFlags = {
-    showTherapistLink: true
+    showTherapistLink: true,
+    showSentimentBadge: true
   };
   
   // Create the document if it doesn't exist
@@ -28,6 +29,12 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   const showTherapistLink = computed(() => {
     if (pending.value) return defaultFlags.showTherapistLink;
     return flags.value?.showTherapistLink ?? defaultFlags.showTherapistLink;
+  });
+
+  // Computed property for easy access to the sentiment badge flag
+  const showSentimentBadge = computed(() => {
+    if (pending.value) return defaultFlags.showSentimentBadge;
+    return flags.value?.showSentimentBadge ?? defaultFlags.showSentimentBadge;
   });
 
   /**
@@ -74,6 +81,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     isLoading,
     error: computed(() => error.value || firebaseError.value?.message),
     showTherapistLink,
+    showSentimentBadge,
     updateFeatureFlag,
     loadFeatureFlags
   };
