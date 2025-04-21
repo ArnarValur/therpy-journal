@@ -51,10 +51,8 @@ export const useJournalEntry = () => {
   const entries = computed<JournalEntry[]>(() => {
     if (!journalEntriesCollection.value) {
       // Handle loading, error, or no-data case
-      console.log('Journal entries collection is null or undefined.');
       return [];
     }
-    console.log(`Mapping ${journalEntriesCollection.value.length} entries from Firestore.`);
     // Map and decrypt directly from VueFire's reactive data
     return journalEntriesCollection.value.map(entryDoc => {
        // Ensure decrypt handles potential errors or empty strings gracefully

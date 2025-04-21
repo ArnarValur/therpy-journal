@@ -458,10 +458,8 @@ export const useAuthStore = defineStore('auth', () => {
         if (firebaseUser) {
           // User is signed in - load merged data
           await setUserWithMergedData(firebaseUser);
-          console.log(`${context} Auth state changed: User signed in`, user.value?.name);
         } else {
           // User is signed out
-          console.log(`${context} Auth state changed: User signed out`);
           user.value = null;
         }
         
@@ -493,15 +491,12 @@ export const useAuthStore = defineStore('auth', () => {
             // Only use cached data if the user was verified
             if (parsedUser.emailVerified) {
               user.value = parsedUser;
-              console.log('[CLIENT] Using cached user data:', user.value.name);
             } else {
               // Remove invalid cached data
               localStorage.removeItem('nuxt-auth-user');
             }
           }
-        } catch (err) {
-          console.error('[CLIENT] Error reading cached user data:', err);
-          // Continue with normal initialization if localStorage fails
+        } catch {
           localStorage.removeItem('nuxt-auth-user');
         }
       }
@@ -548,8 +543,6 @@ export const useAuthStore = defineStore('auth', () => {
       
       // User is already signed in - load merged data
       await setUserWithMergedData(currentUser.value);
-      console.log(`${context} User already signed in:`, user.value?.name);
-      console.log(`${context} Email verification status:`, user.value?.emailVerified);
       
       isLoading.value = false;
       return user.value;

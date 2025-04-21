@@ -31,9 +31,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // If the auth state is loading, wait for it to complete
   if (authStore.isLoading) {
-    console.log('Auth state is loading, waiting...');
     // Wait for auth to finish loading (max 2 seconds)
-    const maxWait = 2000;
+    const maxWait = 1000;
     const startTime = Date.now();
     
     while (authStore.isLoading && (Date.now() - startTime) < maxWait) {

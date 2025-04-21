@@ -5,7 +5,7 @@ import { useAuthStore } from '~/stores/auth';
 import EntryButton from '~/components/buttons/EntryButton.vue';
 import CardTotal from '~/components/cards/Dashboard/CardTotal.vue';
 import CardMood from '~/components/cards/Dashboard/CardMood.vue';
-import CardStreaks from '~/components/cards/Dashboard/CarStreaks.vue';
+import CardStreaks from '~/components/cards/Dashboard/CardStreaks.vue';
 
 definePageMeta({
   layout: 'default',
@@ -35,7 +35,8 @@ const router = useRouter();
 
 // Filter out draft entries for the dashboard
 const publishedEntries = computed(() => {
-  return entries.value.filter(entry => !entry.isDraft);
+  const publishedEntries = entries.value.filter(entry => !entry.isDraft);
+  return publishedEntries;
 });
 
 // Function to strip HTML from journal entry content and get preview
