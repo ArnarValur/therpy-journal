@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useModalSystem } from '~/composables/useModalSystem';
-import CancelButton from '~/components/button/CancelButton.vue';
-import ConfirmButton from '~/components/button/ConfirmButton.vue';
+import CancelButton from '~/components/buttons/CancelButton.vue';
+import ConfirmButton from '~/components/buttons/ConfirmButton.vue';
 
 // Use the modal system to get state and actions
 const { isOpen, title, message, confirm, cancel } = useModalSystem();

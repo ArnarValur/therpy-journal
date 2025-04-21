@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import { useLogout } from '~/composables/useLogout';
 import { useUserPreferences } from '~/composables/useUserPreferences';
 import { useFeatureFlagsStore } from '~/stores/featureFlags';
+import SettingsModal from '~/components/modals/SettingsModal.vue';
 
 // Get sidebar state from the user preferences composable
 const { sidebarOpen, toggleSidebar } = useUserPreferences();

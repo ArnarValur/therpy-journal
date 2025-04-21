@@ -6,8 +6,8 @@ import StarterKit from '@tiptap/starter-kit';
 import { useNuxtApp } from '#app';
 import { useDebounceFn, tryOnBeforeUnmount } from '@vueuse/core';
 
-import CancelButton from '~/components/button/CancelButton.vue';
-import SaveButton from '~/components/button/SaveButton.vue';
+import CancelButton from '~/components/buttons/CancelButton.vue';
+import SaveButton from '~/components/buttons/SaveButton.vue';
 import JournalEditor from '~/components/editor/JournalEditor.vue';
 
 // Get required composables
@@ -164,82 +164,79 @@ const updateSentiment = (key: string, value: number) => {
 const saveEntry = async () => {
   if (!isFormValid.value) return;
 
+  console.log('Saving entry...');
   isManualSaving.value = true;
   isLoading.value = true;
   error.value = null;
 
   try {
+     // Update sentiments object from sliders
     const updatedSentiments = sentimentOptions.value.reduce((acc, sentiment) => {
       acc[sentiment.key] = sentiment.value;
       return acc;
     }, {} as Record<string, number>);
 
-    // This is the final entry data, always non-draft
     const entry = {
       title: title.value,
-      content: content.value || '<p></p>',
+      content: content.value || '<p></p>', // Use HTML content directly
       tags: tags.value,
       sentiments: updatedSentiments,
-      isDraft: false // Explicitly false for manual save
+      isDraft: false // Explicitly mark as not a draft
     };
 
     let success = false;
-    const currentDraftId = draftId.value; // Capture ID before async call
+    // Get current draft ID
+    const currentDraftId = draftId.value;
 
     if (currentDraftId) {
-      // If a draft exists, update it to be the final version
       console.log(`Updating existing draft (ID: ${currentDraftId}) as final entry.`);
+      // Update the existing entry and mark it as not a draft
       success = await updateEntry(currentDraftId, entry);
     } else {
-      // If no draft exists, create the final version directly
-      console.log('Creating new final entry.');
+      console.log('Creating new entry...');
+      // Create new entry
       const result = await createEntry(entry);
-      // --- DO NOT set draftId.value here ---
-      // draftId should only be set by autosave creating a draft
-      success = Boolean(result?.id);
+      if (result?.id) {
+        draftId.value = result.id;
+        success = true;
+      } else {
+        console.error('Failed to create new entry');
+        error.value = 'Failed to save entry';
+        success = false;
+      }
     }
 
     if (success) {
-      console.log('Manual save successful. Navigating...');
       await router.push($routes.JOURNAL.HOME);
-      // isManualSaving flag will be reset by onBeforeUnmount after navigation
     } else {
+      isManualSaving.value = false;
+      isLoading.value = false;
       console.error('Failed to save entry');
       error.value = 'Failed to save entry';
-      isManualSaving.value = false; // Reset flag on explicit failure
-      isLoading.value = false;
     }
   } catch (err) {
+    isManualSaving.value = false;
+    isLoading.value = false;
     console.error('Failed to save entry:', err);
     error.value = 'Failed to save entry';
-    isManualSaving.value = false; // Reset flag on error
-    isLoading.value = false;
   } finally {
-    // Only reset isLoading if manual save didn't succeed and start navigation
     if (!isManualSaving.value) {
-         isLoading.value = false;
+      isLoading.value = false;
     }
   }
 };
 
 // Create a debounced autosave function
 const debouncedAutosave = useDebounceFn(async () => {
-  const currentDraftId = draftId.value; // Capture ID at the very start
-  console.log(`>>> Autosave triggered. Current draftId at start: ${currentDraftId}`);
+  // Don't autosave if we're in the middle of a manual save
+  if (isSaving.value || isManualSaving.value) return;
 
-  // Check flags FIRST to prevent concurrent runs
-  if (isManualSaving.value || isAutosaving.value) {
-      console.log(`Autosave skipped: Flags check (isManualSaving: ${isManualSaving.value}, isAutosaving: ${isAutosaving.value})`);
-      return;
-  }
+  const currentEntryId = draftId.value;
 
-  if (!title.value && !content.value) {
-      console.log('Autosave skipped: No title or content.');
-      return;
-  }
-
-  console.log('Autosave proceeding...');
-  isAutosaving.value = true; // Set flag AFTER checks
+  if (!title.value && !content.value) return;
+  
+  console.log('Autosaving...');
+  isAutosaving.value = true;
   
   try {
     // Update sentiments object from sliders
@@ -253,38 +250,80 @@ const debouncedAutosave = useDebounceFn(async () => {
       content: content.value || '<p></p>', // Use HTML content directly
       tags: tags.value || [],
       sentiments: updatedSentiments,
+      isDraft: true // Always mark as draft when autosaving
     };
 
-    if (currentDraftId) {
-      console.log(`Autosave: Updating existing draft ID: ${currentDraftId}`);
-      await updateEntry(currentDraftId, entry);
+    if (currentEntryId) {
+      console.log('Updating existing draft...');
+      // Update existing draft
+      await updateEntry(currentEntryId, entry);
     } else {
-      console.log('Autosave: Creating new draft...');
+      console.log('Creating new draft...');
+      // Create new draft
       const result = await createEntry(entry);
-      console.log('Autosave: createEntry result:', JSON.stringify(result)); // Log the raw result
       if (result?.id) {
         draftId.value = result.id;
-        console.log(`Autosave: draftId ref SET to: ${draftId.value}`); // Log after setting
-      } else {
-        console.error('Autosave: createEntry failed or did not return an ID.');
       }
     }
+    
     lastAutosaveTime.value = new Date();
   } catch (err) {
     console.error('Autosave failed:', err);
   } finally {
     isAutosaving.value = false;
-    console.log('<<< Autosave finished.');
   }
 }, 2000);
 
-// ALSO Recommended: Add cancellation to onBeforeUnmount if you haven't already
+// Function to ensure entry is saved as draft when navigating away
+const saveAsDraft = async () => {
+  // Skip if we never started writing anything
+  if ((!title.value && !content.value) || isManualSaving.value) return;
+  
+  console.log('Saving as draft before leaving...');
+  
+  try {
+    // Update sentiments object from sliders
+    const updatedSentiments = sentimentOptions.value.reduce((acc, sentiment) => {
+      acc[sentiment.key] = sentiment.value;
+      return acc;
+    }, {} as Record<string, number>);
 
-tryOnBeforeUnmount(() => {
+    const entry = {
+      title: title.value || 'Untitled Draft',
+      content: content.value || '<p></p>',
+      tags: tags.value || [],
+      sentiments: updatedSentiments,
+      isDraft: true // Explicitly mark as draft
+    };
+
+    // If we already have a draft ID, update it
+    if (draftId.value) {
+      await updateEntry(draftId.value, entry);
+    } else {
+      // Otherwise create a new draft entry
+      const result = await createEntry(entry);
+      if (result?.id) {
+        draftId.value = result.id;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to save as draft:', err);
+  }
+};
+
+// Handle Cancel button click - explicitly mark as draft
+const handleCancel = async () => {
+  await saveAsDraft();
+  router.push($routes.JOURNAL.HOME);
+};
+
+// Add cleanup to ensure drafts are saved when navigating away
+tryOnBeforeUnmount(async () => {
   console.log('New Entry Page: Running cleanup before unmount...');
-  isManualSaving.value = false;
-  isLoading.value = false;
 
+  // Save as draft if needed
+  await saveAsDraft();
+  
   if (editor.value) {
     editor.value.destroy();
     console.log('Tiptap editor destroyed.');
@@ -298,23 +337,17 @@ tryOnBeforeUnmount(() => {
 
     <!-- Header section and new entry button -->
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">New Journal Entry</h1>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">New Journal Entry</h1>
+        <span 
+          class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
+        >
+          <i class="ri-draft-line mr-1" />
+          Draft
+        </span>
+      </div>
       <div class="flex gap-3">
-        <CancelButton 
-          type="button" 
-          class=""
-          @click="router.push('/journal')"
-        >
-          Cancel
-        </CancelButton>
-        <SaveButton 
-          class=""
-          :disabled="!isFormValid || isLoading"
-          @click="saveEntry"
-        >
-          <i v-if="isLoading" class="ri-loader-4-line animate-spin mr-2" />
-          Save Entry
-        </SaveButton>
+        <p>Date: {{ new Date().toLocaleDateString() }}</p>
       </div>
     </div>
 
@@ -465,8 +498,26 @@ tryOnBeforeUnmount(() => {
           Add custom feelings and rate them on a scale from 0 to 10
         </div>
       </div>
-    </div>
 
+      <div class="flex gap-3 justify-end">
+        <CancelButton 
+          type="button" 
+          class=""
+          @click="handleCancel"
+        >
+          Cancel
+        </CancelButton>
+        <SaveButton 
+          class=""
+          :disabled="!isFormValid || isLoading"
+          @click="saveEntry"
+        >
+          <i v-if="isLoading" class="ri-loader-4-line animate-spin mr-2" />
+          Save Entry
+        </SaveButton>
+      </div>
+
+    </div>
   </div>
 </template>
 

@@ -9,8 +9,8 @@ import { useNuxtApp } from '#app';
 import { useJournalEntry } from '~/composables/useJournalEntry';
 import { useDebounceFn } from '@vueuse/core';
 
-import SaveButton from '~/components/button/SaveButton.vue';
-import CancelButton from '~/components/button/CancelButton.vue';
+import SaveButton from '~/components/buttons/SaveButton.vue';
+import CancelButton from '~/components/buttons/CancelButton.vue';
 import JournalEditor from '~/components/editor/JournalEditor.vue';
 
 // Get route and route params
@@ -30,6 +30,7 @@ const tags = ref<string[]>([]);
 const sentiments = ref<Record<string, number>>({});
 const currentTag = ref('');
 const loadingEntry = ref(true);
+const entryIsDraft = ref(false);
 
 // Sentiment sliders (custom user-defined sliders)
 const sentimentOptions = ref<Array<{name: string; key: string; value: number; min: number; max: number}>>([]);
@@ -166,6 +167,9 @@ const loadJournalEntry = async () => {
     tags.value = entry.tags || [];
     sentiments.value = entry.sentiments || {};
     
+    // Keep track of whether this is a draft
+    entryIsDraft.value = entry.isDraft || false;
+    
     // Transform sentiments into slider options
     sentimentOptions.value = Object.entries(entry.sentiments || {}).map(([key, value]) => ({
       name: key.charAt(0).toUpperCase() + key.slice(1), // Capitalize first letter
@@ -274,8 +278,45 @@ const saveEntry = async () => {
   }
 };
 
+// Function to ensure entry is saved as draft when navigating away
+const saveAsDraft = async () => {
+  // Skip if we haven't changed anything
+  if (!title.value && !content.value) return;
+  
+  console.log('Saving as draft before leaving...');
+  
+  try {
+    // Update sentiments object from sliders
+    const updatedSentiments = sentimentOptions.value.reduce((acc, sentiment) => {
+      acc[sentiment.key] = sentiment.value;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const entry = {
+      title: title.value || 'Untitled Draft',
+      content: content.value || '<p></p>',
+      tags: tags.value || [],
+      sentiments: updatedSentiments,
+      isDraft: true // Explicitly mark as draft
+    };
+
+    await updateEntry(entryId.value, entry);
+  } catch (err) {
+    console.error('Failed to save as draft:', err);
+  }
+};
+
+// Handle Cancel button click - explicitly mark as draft and redirect
+const handleCancel = async () => {
+  await saveAsDraft();
+  router.push($routes.JOURNAL.HOME);
+};
+
 // Clean up the editor on component unmount
-onBeforeUnmount(() => {
+onBeforeUnmount(async () => {
+  // Save as draft if needed before unmounting
+  await saveAsDraft();
+  
   if (editor.value) {
     editor.value.destroy();
   }
@@ -287,21 +328,15 @@ onBeforeUnmount(() => {
 
     <!-- Header section and new entry button -->
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Edit Journal Entry</h1>
-      <div class="flex gap-3">
-        <CancelButton 
-          class=""
-          @click="$router.push($routes.JOURNAL.HOME)"
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Edit Journal Entry</h1>
+        <span 
+          v-if="entryIsDraft"
+          class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
         >
-          <i class="ri-close-line mr-2" />
-          Cancel
-        </CancelButton>
-        <SaveButton 
-          class=""
-          :disabled="!isFormValid || isLoading"
-          :is-loading="isLoading"
-          @click="saveEntry"
-        />
+          <i class="ri-draft-line mr-1" />
+          Draft
+        </span>
       </div>
     </div>
 
@@ -458,8 +493,25 @@ onBeforeUnmount(() => {
           Add custom feelings and rate them on a scale from 0 to 10
         </div>
       </div>
-    </div>
 
+      <div class="flex gap-3 justify-end">
+        <CancelButton 
+          type="button" 
+          class=""
+          @click="handleCancel"
+        >
+          Cancel
+        </CancelButton>
+        <SaveButton 
+          class=""
+          :disabled="!isFormValid || isLoading"
+          @click="saveEntry"
+        >
+          Save Entry
+        </SaveButton>
+      </div>
+
+    </div>
   </div>
 </template>
 

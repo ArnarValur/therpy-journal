@@ -1,12 +1,12 @@
 <!-- pages/journal/index.vue -->
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
-import EntryButton from '~/components/button/EntryButton.vue';
-import FilterButton from '~/components/button/FilterButton.vue';
-import OpenButton from '~/components/button/OpenButton.vue';
-import EditButton from '~/components/button/EditButton.vue';
-import DeleteButton from '~/components/button/DeleteButton.vue';
-import ConfirmationModal from '~/components/ConfirmationModal.vue';
+import EntryButton from '~/components/buttons/EntryButton.vue';
+import FilterButton from '~/components/buttons/FilterButton.vue';
+import OpenButton from '~/components/buttons/OpenButton.vue';
+import EditButton from '~/components/buttons/EditButton.vue';
+import DeleteButton from '~/components/buttons/DeleteButton.vue';
+import ConfirmationModal from '~/components/modals/ConfirmationModal.vue';
 import { useActionHandler } from '~/composables/useActionHandler';
 import { useModalSystem } from '~/composables/useModalSystem';
 useModalSystem();
@@ -28,6 +28,7 @@ const customDateRange = ref({
   to: ''
 });
 
+// Delete entry state
 const {
   execute: executeDelete,
   isLoading: isDeleting,
@@ -422,7 +423,7 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
     </div>
   </div>
 
-  <!-- Delete confirmation modal -->
+  <!-- Confirmation modal -->
   <ConfirmationModal />
 
 </template>

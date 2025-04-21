@@ -5,11 +5,16 @@ import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 
 // Components
-import BackButton from '~/components/button/BackButton.vue';
-import EditButton from '~/components/button/EditButton.vue';
-import DeleteButton from '~/components/button/DeleteButton.vue';
+import BackButton from '~/components/buttons/BackButton.vue';
+import EditButton from '~/components/buttons/EditButton.vue';
+import DeleteButton from '~/components/buttons/DeleteButton.vue';
+import ConfirmationModal from '~/components/modals/ConfirmationModal.vue';
+import { useActionHandler } from '~/composables/useActionHandler';
+import { useModalSystem } from '~/composables/useModalSystem';
+useModalSystem();
+
 // Get required composables
-const { loadEntry, entry, isLoading, error } = useJournalEntry();
+const { loadEntry, entry, isLoading, error, deleteEntry } = useJournalEntry();
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
@@ -83,6 +88,34 @@ const handleBackToList = () => {
   const { $routes } = useNuxtApp();
   router.push($routes.JOURNAL.HOME);
 };
+
+// Delete entry state
+const {
+  execute: executeDelete,
+  isLoading: isDeleting,
+  error: deleteError,
+} = useActionHandler<string, boolean>({
+  actionFn: deleteEntry,
+  confirmation: {
+    title: 'Confirm Deletion',
+    message: 'Are you sure you want to delete this journal entry? This action cannot be undone.'
+  },
+  successMessage: 'Journal entry deleted successfully',
+  errorMessage: 'Failed to delete journal entry',
+  onSuccess: (result, id) => { 
+    console.log('Deleted entry:', id); 
+    // Redirect to journal list after successful deletion
+    const { $routes } = useNuxtApp();
+    router.push($routes.JOURNAL.HOME);
+  },
+  onError: (err, id) => { console.error('Error deleting entry ${id}:', err, id); }
+});
+
+// Handle delete entry
+const requestDeleteEntry = (event: Event, id: string) => {
+  event.stopPropagation();
+  executeDelete(id);
+}
 </script>
 
 <template>
@@ -91,15 +124,6 @@ const handleBackToList = () => {
     <!-- Header section and new entry button -->
     <div class="flex items-center justify-between mb-6">
       <h1 class=""/>
-      <div class="flex gap-3">
-        <BackButton 
-          class="bg-blue-500"
-          @click="handleBackToList"
-        >
-          <i class="ri-arrow-left-line mr-2" />
-          Back
-        </BackButton>
-      </div>
     </div>
 
     <!-- Loading state -->
@@ -174,20 +198,35 @@ const handleBackToList = () => {
       </div>
 
       <!-- Action buttons -->
-      <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 flex justify-end">
+      <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 flex gap-3 justify-end">
+        <BackButton 
+          class=""
+          @click="handleBackToList"
+        >
+          <i class="ri-arrow-left-line mr-2" />
+          Back
+        </BackButton>
         <EditButton 
           @click="handleEditEntry"
         >
           <i class="ri-edit-line mr-2" />
           Edit Entry
         </EditButton>
-        <DeleteButton 
-
+        <DeleteButton
+          :disabled="isDeleting"
+          @click="(e) => requestDeleteEntry(e, entry?.id as string)"
         >
-          <i class="ri-delete-bin-line mr-2" />
-          Delete Entry
+          <i v-if="!isDeleting" class="ri-delete-bin-line mr-2" />
+          <i v-else class="ri-loader-line animate-spin mr-2" />
+          {{ isDeleting ? 'Deleting...' : 'Delete Entry' }}
         </DeleteButton>
+        <div v-if="deleteError && !isDeleting" class="text-red-500 text-sm p-3">
+          {{ deleteError.message }}
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Confirmation modal -->
+  <ConfirmationModal />
 </template> 

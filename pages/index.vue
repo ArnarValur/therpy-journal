@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAuthStore } from '~/stores/auth';
-import EntryButton from '~/components/button/EntryButton.vue';
+import EntryButton from '~/components/buttons/EntryButton.vue';
 
 definePageMeta({
   layout: 'default',
@@ -21,7 +21,7 @@ onMounted(async () => {
 });
 
 // TODO: add loading state and error handling
-const { loadEntries, entries, isLoading, error } = useJournalEntry();
+const { loadEntries, entries } = useJournalEntry();
 const { sanitize } = useSanitize();
 
 // Get required stores
