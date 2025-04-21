@@ -1,7 +1,7 @@
 // composables/useJournalEntry.ts
 import { collection, query, addDoc, updateDoc, doc, orderBy, Timestamp, deleteDoc } from 'firebase/firestore';
 import type { Firestore, DocumentData } from 'firebase/firestore';
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useFirestore, useCollection, useDocument } from 'vuefire';
 import { useAuthStore } from '~/stores/auth';
 import { useEncryption } from '~/composables/useEncryption';
@@ -33,12 +33,12 @@ export const useJournalEntry = () => {
   const userId = computed(() => auth.user?.id);
   const error = ref<Error | null>(null);
   const isLoading = ref(false);
-  const entries = ref<JournalEntry[]>([]);
+  //const entries = ref<JournalEntry[]>([]);
   const entry = ref<JournalEntry | null>(null);
   const currentEntry = ref<JournalEntry | null>(null);
   
   // Use VueFire's useCollection for reactive data
-  const { data: journalEntries, pending: entriesPending } = useCollection(
+  const { data: journalEntriesCollection, pending: entriesPending } = useCollection(
     computed(() => {
       if (!userId.value) return null;
       return query(
@@ -48,8 +48,43 @@ export const useJournalEntry = () => {
     })
   );
   
+  const entries = computed<JournalEntry[]>(() => {
+    if (!journalEntriesCollection.value) {
+      // Handle loading, error, or no-data case
+      console.log('Journal entries collection is null or undefined.');
+      return [];
+    }
+    console.log(`Mapping ${journalEntriesCollection.value.length} entries from Firestore.`);
+    // Map and decrypt directly from VueFire's reactive data
+    return journalEntriesCollection.value.map(entryDoc => {
+       // Ensure decrypt handles potential errors or empty strings gracefully
+       const decryptedTags = entryDoc.tags ? entryDoc.tags.map((tag: string) => decrypt(tag)) : [];
+       let decryptedSentiments: Record<string, number> | undefined;
+       try {
+          decryptedSentiments = entryDoc.sentiments?.data ? JSON.parse(decrypt(entryDoc.sentiments.data)) : undefined;
+       } catch(e) {
+           console.error(`Failed to parse sentiments for entry ${entryDoc.id}:`, e);
+           decryptedSentiments = undefined;
+       }
+
+       return {
+        // Spread potentially non-existent fields carefully if needed based on Firestore structure
+        // Assuming all fields exist but might be encrypted/need type conversion
+        id: entryDoc.id, // VueFire adds the ID
+        title: decrypt(entryDoc.title),
+        content: decrypt(entryDoc.content),
+        tags: decryptedTags,
+        sentiments: decryptedSentiments,
+        createdAt: entryDoc.createdAt instanceof Timestamp ? entryDoc.createdAt.toDate() : entryDoc.createdAt,
+        updatedAt: entryDoc.updatedAt instanceof Timestamp ? entryDoc.updatedAt.toDate() : entryDoc.updatedAt,
+        userId: userId.value || '', // Use the reactive userId
+        isDraft: entryDoc.isDraft || false,
+       } as JournalEntry; // Assert type if confident in mapping
+    });
+  });
+
   // Watch for changes in the collection data
-  watch(journalEntries, (newEntries) => {
+  /*watch(journalEntries, (newEntries) => {
     if (newEntries) {
       entries.value = newEntries.map(entry => ({
         ...entry,
@@ -65,7 +100,7 @@ export const useJournalEntry = () => {
     } else {
       entries.value = [];
     }
-  });
+  });*/
   
   /**
    * Create a new journal entry
@@ -179,12 +214,29 @@ export const useJournalEntry = () => {
       error.value = new Error('You must be authenticated to update a journal entry');
       return false;
     }
+
+    const currentUserId = auth.user?.id;
+
+    if (!currentUserId) {
+      console.log('No user ID found');
+      error.value = new Error('You must be authenticated to update a journal entry');
+      return false;
+    }
+    if (!id) {
+      console.log('No ID found');
+      error.value = new Error('You must be authenticated to update a journal entry');
+      return false;
+    }
     
     isLoading.value = true;
     error.value = null;
     
+    console.log(`updateEntry called for User ID: ${currentUserId}, Entry ID: ${id}`);
+    console.log('updateEntry updates:', JSON.stringify(updates));
+    
     try {
-      const docRef = doc(firestore as Firestore, 'users', userId.value, 'journalEntries', id);
+      console.log('updateEntry called with updates:', JSON.stringify(updates));
+      const docRef = doc(firestore as Firestore, 'users', currentUserId, 'journalEntries', id);
       const updateData: FirebaseDocData = {
         updatedAt: new Date()
       };
@@ -207,8 +259,10 @@ export const useJournalEntry = () => {
         };
       }
       
+      // Explicitly handle isDraft field
       if (updates.isDraft !== undefined) {
         updateData.isDraft = updates.isDraft;
+        console.log('Setting isDraft to:', updates.isDraft);
       }
       
       await updateDoc(docRef, updateData);
@@ -216,6 +270,7 @@ export const useJournalEntry = () => {
     } catch (err) {
       console.error('Error updating journal entry:', err);
       error.value = new Error('Failed to update journal entry');
+      
       return false;
     } finally {
       isLoading.value = false;

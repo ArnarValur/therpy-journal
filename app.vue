@@ -41,7 +41,7 @@ onMounted(async () => {
     return;
   }
   
-  // Check if we have a logged-in user from browser storage
+  // TODO: Implement cookie consent check for users
   const cachedUser = localStorage.getItem('nuxt-auth-user');
   if (cachedUser) {
     // We have a cached user, just initialize in the background

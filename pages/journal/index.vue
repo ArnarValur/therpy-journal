@@ -3,6 +3,13 @@
 import { onMounted, ref, computed } from 'vue';
 import EntryButton from '~/components/button/EntryButton.vue';
 import FilterButton from '~/components/button/FilterButton.vue';
+import OpenButton from '~/components/button/OpenButton.vue';
+import EditButton from '~/components/button/EditButton.vue';
+import DeleteButton from '~/components/button/DeleteButton.vue';
+import ConfirmationModal from '~/components/ConfirmationModal.vue';
+import { useActionHandler } from '~/composables/useActionHandler';
+import { useModalSystem } from '~/composables/useModalSystem';
+useModalSystem();
 
 // Get required composables
 const { loadEntries, entries, isLoading, error, deleteEntry } = useJournalEntry();
@@ -21,9 +28,30 @@ const customDateRange = ref({
   to: ''
 });
 
+const {
+  execute: executeDelete,
+  isLoading: isDeleting,
+  error: deleteError,
+} = useActionHandler<string, boolean>({
+  actionFn: deleteEntry,
+  confirmation: {
+    title: 'Confirm Deletion',
+    message: 'Are you sure you want to delete this journal entry? This action cannot be undone.'
+  },
+  successMessage: 'Journal entry deleted successfully',
+  errorMessage: 'Failed to delete journal entry',
+  onSuccess: (result, id) => { console.log('Deleted entry:', id); },
+  onError: (err, id) => { console.error('Error deleting entry ${id}:', err, id); }
+});
+
+const requestDeleteEntry = (event: Event, id: string) => {
+  event.stopPropagation();
+  executeDelete(id);
+}
+
 // Confirmation modal state
-const showDeleteModal = ref(false);
-const entryToDelete = ref<string | null>(null);
+//const showDeleteModal = ref(false);
+//const entryToDelete = ref<string | null>(null);
 
 // Check if user is authenticated
 onMounted(async () => {
@@ -142,26 +170,26 @@ const handleEditEntry = (event: Event, id: string) => {
 };
 
 // Show delete confirmation dialog
-const confirmDelete = (event: Event, id: string) => {
+/*const confirmDelete = (event: Event, id: string) => {
   event.stopPropagation();
   entryToDelete.value = id;
   showDeleteModal.value = true;
-};
+};*/
 
 // Handle journal entry deletion
-const handleDeleteEntry = async () => {
+/*const handleDeleteEntry = async () => {
   if (entryToDelete.value) {
     await deleteEntry(entryToDelete.value);
     showDeleteModal.value = false;
     entryToDelete.value = null;
   }
-};
+};*/
 
 // Cancel deletion
-const cancelDelete = () => {
+/*const cancelDelete = () => {
   showDeleteModal.value = false;
   entryToDelete.value = null;
-};
+};*/
 
 // Get class for sentiment circle
 const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
@@ -182,126 +210,126 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
 <template>
   <div class="space-y-6 sm:space-y-8 p-4 sm:p-6 bg-gray-50 dark:bg-transparent rounded-lg">
 
-      <!-- Header section and new entry button -->
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">My Journals</h1>
-        <EntryButton 
-          class="text-white"
-          @click="handleNewEntry"
-        >
-          <i class="ri-add-line mr-2" />
-          New Entry
-        </EntryButton>
-      </div>
+    <!-- Header section and new entry button -->
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">My Journals</h1>
+      <EntryButton 
+        class="text-white"
+        @click="handleNewEntry"
+      >
+        <i class="ri-add-line mr-2" />
+        New Entry
+      </EntryButton>
+    </div>
       
-      <!-- Filter options -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div class="flex flex-col md:flex-row gap-4 items-end">
-          <div class="flex-grow">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Filter by date
-            </label>
-            <div class="flex flex-wrap gap-2">
-              <FilterButton 
-                :is-active="dateFilter === 'all'"
-                @click="dateFilter = 'all'" 
-              >
-                All
-              </FilterButton>
-              <FilterButton 
-                :is-active="dateFilter === 'today'"
-                @click="dateFilter = 'today'" 
-              >
-                Today
-              </FilterButton>
-              <FilterButton 
-                :is-active="dateFilter === 'week'"
-                @click="dateFilter = 'week'" 
-              >
-                Last 7 days
-              </FilterButton>
-              <FilterButton 
-                :is-active="dateFilter === 'month'"
-                @click="dateFilter = 'month'" 
-              >
-                Last 30 days
-              </FilterButton>
-              <FilterButton 
-                :is-active="dateFilter === 'custom'"
-                @click="dateFilter = 'custom'" 
-              >
-                Custom range
-              </FilterButton>
-              <FilterButton 
-                :is-active="showDrafts"
-                @click="showDrafts = !showDrafts" 
-              >
-                {{ showDrafts ? 'Hide Drafts' : 'Show Drafts' }}
-              </FilterButton>
-            </div>
+    <!-- Filter options -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+      <div class="flex flex-col md:flex-row gap-4 items-end">
+        <div class="flex-grow">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Filter by date
+          </label>
+          <div class="flex flex-wrap gap-2">
+            <FilterButton 
+              :is-active="dateFilter === 'all'"
+              @click="dateFilter = 'all'" 
+            >
+              All
+            </FilterButton>
+            <FilterButton 
+              :is-active="dateFilter === 'today'"
+              @click="dateFilter = 'today'" 
+            >
+              Today
+            </FilterButton>
+            <FilterButton 
+              :is-active="dateFilter === 'week'"
+              @click="dateFilter = 'week'" 
+            >
+              Last 7 days
+            </FilterButton>
+            <FilterButton 
+              :is-active="dateFilter === 'month'"
+              @click="dateFilter = 'month'" 
+            >
+              Last 30 days
+            </FilterButton>
+            <FilterButton 
+              :is-active="dateFilter === 'custom'"
+              @click="dateFilter = 'custom'" 
+            >
+              Custom range
+            </FilterButton>
+            <FilterButton 
+              :is-active="showDrafts"
+              @click="showDrafts = !showDrafts" 
+            >
+              {{ showDrafts ? 'Hide Drafts' : 'Show Drafts' }}
+            </FilterButton>
           </div>
-          
-          <div v-if="dateFilter === 'custom'" class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
-            <div>
-              <label for="from-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From</label>
-              <input 
-                id="from-date" 
-                v-model="customDateRange.from"
-                type="date" 
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-            </div>
-            <div>
-              <label for="to-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To</label>
-              <input 
-                id="to-date" 
-                v-model="customDateRange.to"
-                type="date" 
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-            </div>
+        </div>
+        
+        <div v-if="dateFilter === 'custom'" class="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+          <div>
+            <label for="from-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From</label>
+            <input 
+              id="from-date" 
+              v-model="customDateRange.from"
+              type="date" 
+              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+          </div>
+          <div>
+            <label for="to-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To</label>
+            <input 
+              id="to-date" 
+              v-model="customDateRange.to"
+              type="date" 
+              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Loading state -->
-      <div v-if="isLoading" class="flex justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400" />
-      </div>
+    <!-- Loading state -->
+    <div v-if="isLoading" class="flex justify-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400" />
+    </div>
 
-      <!-- Error message -->
-      <div v-if="error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/30 dark:border-red-800">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <i class="ri-error-warning-line text-red-400 dark:text-red-300" />
-          </div>
-          <div class="ml-3">
-            <h3 class="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
-            <div class="mt-2 text-sm text-red-700 dark:text-red-300">{{ error }}</div>
-          </div>
+    <!-- Error message -->
+    <div v-if="error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/30 dark:border-red-800">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <i class="ri-error-warning-line text-red-400 dark:text-red-300" />
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
+          <div class="mt-2 text-sm text-red-700 dark:text-red-300">{{ error }}</div>
         </div>
       </div>
+    </div>
 
-      <!-- No entries yet message -->
-      <div v-if="!isLoading && entries.length === 0" class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <i class="ri-book-line text-5xl text-gray-400 mb-4" />
-        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">No journal entries yet</h3>
-        <p class="text-gray-500 dark:text-gray-400 mt-2 mb-6">Start writing your thoughts and feelings</p>
-        <EntryButton 
-          class="mx-auto"
-          @click="handleNewEntry"
-        >
-          <i class="ri-add-line mr-2" />
-          Create your first entry
-        </EntryButton>
-      </div>
+    <!-- No entries yet message -->
+    <div v-if="!isLoading && entries.length === 0" class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <i class="ri-book-line text-5xl text-gray-400 mb-4" />
+      <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">No journal entries yet</h3>
+      <p class="text-gray-500 dark:text-gray-400 mt-2 mb-6">Start writing your thoughts and feelings</p>
+      <EntryButton 
+        class="mx-auto"
+        @click="handleNewEntry"
+      >
+        <i class="ri-add-line mr-2" />
+        Create your first entry
+      </EntryButton>
+    </div>
 
-      <!-- No matching entries message -->
-      <div v-else-if="!isLoading && entries.length > 0 && filteredEntries.length === 0" class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <i class="ri-filter-off-line text-5xl text-gray-400 mb-4" />
-        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">No entries match your filter</h3>
-        <p class="text-gray-500 dark:text-gray-400 mt-2">Try changing your date filter to see more entries</p>
-      </div>
+    <!-- No matching entries message -->
+    <div v-else-if="!isLoading && entries.length > 0 && filteredEntries.length === 0" class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <i class="ri-filter-off-line text-5xl text-gray-400 mb-4" />
+      <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">No entries match your filter</h3>
+      <p class="text-gray-500 dark:text-gray-400 mt-2">Try changing your date filter to see more entries</p>
+    </div>
 
       <!-- Journal entries list -->
       <div v-else-if="!isLoading && filteredEntries.length > 0" class="space-y-4">
@@ -309,112 +337,94 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
           v-for="entry in filteredEntries" 
           :key="entry.id" 
           class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden"
-          @click="handleViewEntry(entry.id as string)"
         >
-          <div class="p-5 cursor-pointer">
-            <div class="flex justify-between items-start">
-              <div class="flex items-start space-x-3">
-                <div 
-                  class="w-3 h-3 rounded-full mt-2 flex-shrink-0" 
-                  :class="getSentimentClass(entry)"
-                />
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-1">
-                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.title }}</h3>
-                    <span 
-                      v-if="entry.isDraft" 
-                      class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
-                    >
-                      <i class="ri-draft-line mr-1" />
-                      Draft
-                    </span>
-                  </div>
-                  <div class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ formatDate(entry.createdAt instanceof Date ? entry.createdAt : new Date()) }}
-                  </div>
+        <!-- Journal Card -->
+        <div class="p-5">
+          <div class="flex justify-between items-start">
+            <div class="flex items-start space-x-3">
+              <!-- Sentiment circle -->
+              <div 
+                class="w-3 h-3 rounded-full mt-2 flex-shrink-0" 
+                :class="getSentimentClass(entry)"
+              />
+              
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <!-- Title -->
+                  <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.title }}</h3>
+
+                  <!-- Draft tag -->
+                  <span 
+                    v-if="entry.isDraft" 
+                    class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
+                  >
+                    <i class="ri-draft-line mr-1" />
+                    Draft
+                  </span>
+                </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ formatDate(entry.createdAt instanceof Date ? entry.createdAt : new Date()) }}
                 </div>
               </div>
             </div>
+          </div>
             
-            <!-- Preview of content (limited characters) -->
-            <div class="mt-3 text-gray-600 dark:text-gray-300 line-clamp-2 prose dark:prose-invert max-w-none ml-6">
-              <div v-html="entry.content" />
-            </div>
-
-            <!-- Tags if present -->
-            <div v-if="entry.tags && entry.tags.length > 0" class="mt-3 ml-6 flex flex-wrap gap-2">
-              <span 
-                v-for="tag in entry.tags.slice(0, 3)" 
-                :key="tag"
-                class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full dark:bg-blue-900 dark:text-blue-200"
-              >
-                {{ tag }}
-              </span>
-              <span 
-                v-if="entry.tags.length > 3" 
-                class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full dark:bg-gray-700 dark:text-gray-300"
-              >
-                +{{ entry.tags.length - 3 }} more
-              </span>
-            </div>
+          <!-- Preview of content (limited characters) -->
+          <div class="mt-3 text-gray-600 dark:text-gray-300 line-clamp-2 prose dark:prose-invert max-w-none ml-6">
+            <div v-html="entry.content" />
           </div>
 
-          <!-- Action buttons -->
-          <div class="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 flex justify-end space-x-2">
-            <!-- TODO: componentize these buttons -->
-            <button 
-              type="button"
-              class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center"
-              @click="handleViewEntry(entry.id as string)" 
+          <!-- Tags if present -->
+          <div v-if="entry.tags && entry.tags.length > 0" class="mt-3 ml-6 flex flex-wrap gap-2">
+            <span 
+              v-for="tag in entry.tags.slice(0, 3)" 
+              :key="tag"
+              class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full dark:bg-blue-900 dark:text-blue-200"
             >
-              <i class="ri-eye-line mr-1" />
-              Open
-            </button>
-            <button 
-              type="button"
-              class="px-3 py-1 text-sm text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 rounded border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center"
-              @click="(e) => handleEditEntry(e, entry.id as string)" 
+              {{ tag }}
+            </span>
+            <span 
+              v-if="entry.tags.length > 3" 
+              class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full dark:bg-gray-700 dark:text-gray-300"
             >
-              <i class="ri-edit-line mr-1" />
-              Edit
-            </button>
-            <button 
-              type="button"
-              class="px-3 py-1 text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 rounded border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors flex items-center"
-              @click="(e) => confirmDelete(e, entry.id as string)" 
-            >
-              <i class="ri-delete-bin-line mr-1" />
-              Delete
-            </button>
+              +{{ entry.tags.length - 3 }} more
+            </span>
           </div>
         </div>
-      </div>
-  </div>
 
-  <!-- Delete confirmation modal -->
-  <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full p-6">
-      <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Confirm Deletion</h3>
-      <p class="text-gray-600 dark:text-gray-300 mb-6">Are you sure you want to delete this journal entry? This action cannot be undone.</p>
-      
-      <div class="flex justify-end space-x-3">
-        <button 
-          type="button"
-          class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-          @click="cancelDelete" 
-        >
-          Cancel
-        </button>
-        <button 
-          type="button"
-          class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-          @click="handleDeleteEntry"
-        >
-          Delete
-        </button>
+        <!-- Action buttons -->
+        <div class="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 flex justify-end space-x-2">
+          <OpenButton 
+            @click="handleViewEntry(entry.id as string)" 
+          >
+            <i class="ri-eye-line mr-1" />
+            Open
+          </OpenButton>
+          <EditButton 
+            @click="(e) => handleEditEntry(e, entry.id as string)" 
+          >
+            <i class="ri-edit-line mr-1" />
+            Edit
+          </EditButton>
+          <DeleteButton 
+            :disabled="isDeleting"
+            @click="(e) => requestDeleteEntry(e, entry.id as string)"
+          >
+            <i v-if="!isDeleting" class="ri-delete-bin-line mr-1" />
+            <i v-else class="ri-loader-line animate-spin mr-1" />
+            {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          </DeleteButton>
+        </div>
+        <div v-if="deleteError && !isDeleting" class="text-red-500 text-sm p-3">
+          {{ deleteError.message }}
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- Delete confirmation modal -->
+  <ConfirmationModal />
+
 </template>
 
 <style scoped>

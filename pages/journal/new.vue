@@ -1,10 +1,10 @@
 <!-- pages/journal/new.vue -->
 <script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useEditor } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import { useNuxtApp } from '#app';
-import { useDebounceFn } from '@vueuse/core';
+import { useDebounceFn, tryOnBeforeUnmount } from '@vueuse/core';
 
 import CancelButton from '~/components/button/CancelButton.vue';
 import SaveButton from '~/components/button/SaveButton.vue';
@@ -27,6 +27,8 @@ const sentiments = ref<Record<string, number>>({});
 const draftId = ref<string | null>(null);
 const isAutosaving = ref(false);
 const lastAutosaveTime = ref<Date | null>(null);
+const isSaving = ref(false);
+const isManualSaving = ref(false);
 
 // Sentiment sliders (custom user-defined sliders)
 const sentimentOptions = ref<Array<{name: string; key: string; value: number; min: number; max: number}>>([]);
@@ -47,48 +49,11 @@ const autosaveStatus = computed(() => {
 // Handle editor content updates
 const handleEditorUpdate = (html: string) => {
   content.value = html;
-  debouncedAutosave();
-};
-
-// Create a debounced autosave function
-const debouncedAutosave = useDebounceFn(async () => {
-  if (!title.value && !content.value) return;
-  
-  isAutosaving.value = true;
-  
-  try {
-    // Update sentiments object from sliders
-    const updatedSentiments = sentimentOptions.value.reduce((acc, sentiment) => {
-      acc[sentiment.key] = sentiment.value;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const entry = {
-      title: title.value,
-      content: content.value || '<p></p>', // Use HTML content directly
-      tags: tags.value || [],
-      sentiments: updatedSentiments,
-      isDraft: true // Mark as draft when autosaving
-    };
-
-    if (draftId.value) {
-      // Update existing draft
-      await updateEntry(draftId.value, entry);
-    } else {
-      // Create new draft
-      const result = await createEntry(entry);
-      if (result?.id) {
-        draftId.value = result.id;
-      }
-    }
-    
-    lastAutosaveTime.value = new Date();
-  } catch (err) {
-    console.error('Autosave failed:', err);
-  } finally {
-    isAutosaving.value = false;
+  // Only trigger autosave if we're not in the middle of a manual save
+  if (!isManualSaving.value) {
+    debouncedAutosave();
   }
-}, 2000);
+};
 
 // TipTap editor configuration
 const editor = useEditor({
@@ -96,7 +61,10 @@ const editor = useEditor({
   extensions: [StarterKit],
   onUpdate: ({ editor }) => {
     content.value = editor.getHTML();
-    debouncedAutosave();
+    // Only trigger autosave if we're not in the middle of a manual save
+    if (!isManualSaving.value) {
+      debouncedAutosave();
+    }
   }
 });
 
@@ -196,38 +164,133 @@ const updateSentiment = (key: string, value: number) => {
 const saveEntry = async () => {
   if (!isFormValid.value) return;
 
-  // Update sentiments object from sliders
-  sentimentOptions.value.forEach(sentiment => {
-    sentiments.value[sentiment.key] = sentiment.value;
-  });
+  isManualSaving.value = true;
+  isLoading.value = true;
+  error.value = null;
 
-  const entry = {
-    title: title.value,
-    content: content.value || '<p></p>', // Use HTML content directly
-    tags: tags.value,
-    sentiments: sentiments.value,
-    isDraft: false // Mark as not a draft when explicitly saving
-  };
+  try {
+    const updatedSentiments = sentimentOptions.value.reduce((acc, sentiment) => {
+      acc[sentiment.key] = sentiment.value;
+      return acc;
+    }, {} as Record<string, number>);
 
-  let result;
-  if (draftId.value) {
-    // Update the existing draft and mark it as not a draft anymore
-    result = await updateEntry(draftId.value, entry);
-  } else {
-    result = await createEntry(entry);
-  }
-  
-  if (result) {
-    await router.push($routes.JOURNAL.HOME);
+    // This is the final entry data, always non-draft
+    const entry = {
+      title: title.value,
+      content: content.value || '<p></p>',
+      tags: tags.value,
+      sentiments: updatedSentiments,
+      isDraft: false // Explicitly false for manual save
+    };
+
+    let success = false;
+    const currentDraftId = draftId.value; // Capture ID before async call
+
+    if (currentDraftId) {
+      // If a draft exists, update it to be the final version
+      console.log(`Updating existing draft (ID: ${currentDraftId}) as final entry.`);
+      success = await updateEntry(currentDraftId, entry);
+    } else {
+      // If no draft exists, create the final version directly
+      console.log('Creating new final entry.');
+      const result = await createEntry(entry);
+      // --- DO NOT set draftId.value here ---
+      // draftId should only be set by autosave creating a draft
+      success = Boolean(result?.id);
+    }
+
+    if (success) {
+      console.log('Manual save successful. Navigating...');
+      await router.push($routes.JOURNAL.HOME);
+      // isManualSaving flag will be reset by onBeforeUnmount after navigation
+    } else {
+      console.error('Failed to save entry');
+      error.value = 'Failed to save entry';
+      isManualSaving.value = false; // Reset flag on explicit failure
+      isLoading.value = false;
+    }
+  } catch (err) {
+    console.error('Failed to save entry:', err);
+    error.value = 'Failed to save entry';
+    isManualSaving.value = false; // Reset flag on error
+    isLoading.value = false;
+  } finally {
+    // Only reset isLoading if manual save didn't succeed and start navigation
+    if (!isManualSaving.value) {
+         isLoading.value = false;
+    }
   }
 };
 
-// Clean up the editor on component unmount
-onBeforeUnmount(() => {
+// Create a debounced autosave function
+const debouncedAutosave = useDebounceFn(async () => {
+  const currentDraftId = draftId.value; // Capture ID at the very start
+  console.log(`>>> Autosave triggered. Current draftId at start: ${currentDraftId}`);
+
+  // Check flags FIRST to prevent concurrent runs
+  if (isManualSaving.value || isAutosaving.value) {
+      console.log(`Autosave skipped: Flags check (isManualSaving: ${isManualSaving.value}, isAutosaving: ${isAutosaving.value})`);
+      return;
+  }
+
+  if (!title.value && !content.value) {
+      console.log('Autosave skipped: No title or content.');
+      return;
+  }
+
+  console.log('Autosave proceeding...');
+  isAutosaving.value = true; // Set flag AFTER checks
+  
+  try {
+    // Update sentiments object from sliders
+    const updatedSentiments = sentimentOptions.value.reduce((acc, sentiment) => {
+      acc[sentiment.key] = sentiment.value;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const entry = {
+      title: title.value,
+      content: content.value || '<p></p>', // Use HTML content directly
+      tags: tags.value || [],
+      sentiments: updatedSentiments,
+    };
+
+    if (currentDraftId) {
+      console.log(`Autosave: Updating existing draft ID: ${currentDraftId}`);
+      await updateEntry(currentDraftId, entry);
+    } else {
+      console.log('Autosave: Creating new draft...');
+      const result = await createEntry(entry);
+      console.log('Autosave: createEntry result:', JSON.stringify(result)); // Log the raw result
+      if (result?.id) {
+        draftId.value = result.id;
+        console.log(`Autosave: draftId ref SET to: ${draftId.value}`); // Log after setting
+      } else {
+        console.error('Autosave: createEntry failed or did not return an ID.');
+      }
+    }
+    lastAutosaveTime.value = new Date();
+  } catch (err) {
+    console.error('Autosave failed:', err);
+  } finally {
+    isAutosaving.value = false;
+    console.log('<<< Autosave finished.');
+  }
+}, 2000);
+
+// ALSO Recommended: Add cancellation to onBeforeUnmount if you haven't already
+
+tryOnBeforeUnmount(() => {
+  console.log('New Entry Page: Running cleanup before unmount...');
+  isManualSaving.value = false;
+  isLoading.value = false;
+
   if (editor.value) {
     editor.value.destroy();
+    console.log('Tiptap editor destroyed.');
   }
 });
+
 </script>
 
 <template>

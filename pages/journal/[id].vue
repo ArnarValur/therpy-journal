@@ -3,8 +3,11 @@
 import { onMounted, watch, onBeforeUnmount } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
-import BackButton from '~/components/button/BackButton.vue';
 
+// Components
+import BackButton from '~/components/button/BackButton.vue';
+import EditButton from '~/components/button/EditButton.vue';
+import DeleteButton from '~/components/button/DeleteButton.vue';
 // Get required composables
 const { loadEntry, entry, isLoading, error } = useJournalEntry();
 const authStore = useAuthStore();
@@ -172,14 +175,18 @@ const handleBackToList = () => {
 
       <!-- Action buttons -->
       <div class="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 flex justify-end">
-        <button 
-          type="button"
-          class="px-4 py-2 text-sm text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 rounded border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center"
+        <EditButton 
           @click="handleEditEntry"
         >
           <i class="ri-edit-line mr-2" />
           Edit Entry
-        </button>
+        </EditButton>
+        <DeleteButton 
+
+        >
+          <i class="ri-delete-bin-line mr-2" />
+          Delete Entry
+        </DeleteButton>
       </div>
     </div>
   </div>

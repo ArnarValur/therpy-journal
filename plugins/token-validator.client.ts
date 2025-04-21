@@ -97,12 +97,13 @@ export default defineNuxtPlugin({
       }
     }, { immediate: true });
     
+    //[Vue warn]: onBeforeUnmount is called when there is no active component instance to be associated with. Lifecycle injection APIs can only be used during execution of setup(). If you are using async setup(), make sure to register lifecycle hooks before the first await statement.
     // Clean up on app unmount
-    onBeforeUnmount(() => {
+    /*onBeforeUnmount(() => {
       if (validationInterval) {
         clearInterval(validationInterval);
         validationInterval = null;
       }
-    });
+    });*/
   }
 }); 
