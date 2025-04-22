@@ -345,7 +345,7 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
         >
         <!-- Journal Card -->
         <div class="p-5">
-          <div class="flex justify-between items-start">
+          <div class="flex justify-between items-start ml-6">
             <div class="flex items-start space-x-3">
               <!-- Sentiment circle -->
               <div 
@@ -376,7 +376,7 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
           </div>
             
           <!-- Preview of content (limited characters) -->
-          <div class="mt-3 text-gray-600 dark:text-gray-300 line-clamp-2 prose dark:prose-invert max-w-none ml-6">
+          <div class="mt-3 text-gray-600 dark:text-gray-300 line-clamp-2 prose dark:prose-invert max-w-none ml-6 mr-6">
             <div v-html="entry.content" />
           </div>
 
