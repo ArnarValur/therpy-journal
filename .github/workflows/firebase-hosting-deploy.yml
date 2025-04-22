@@ -27,8 +27,8 @@ jobs:
       - name: Run Tests
         run: npm test
 
-      - name: Build
-        run: npm run build
+      - name: Build with Firebase preset
+        run: npm run build:firebase
         env:
           NUXT_FIREBASE_API_KEY: ${{ secrets.NUXT_FIREBASE_API_KEY }}
           NUXT_FIREBASE_AUTH_DOMAIN: ${{ secrets.NUXT_FIREBASE_AUTH_DOMAIN }}
@@ -39,10 +39,13 @@ jobs:
           NUXT_FIREBASE_CLIENT_EMAIL: ${{ secrets.NUXT_FIREBASE_CLIENT_EMAIL }}
           NUXT_FIREBASE_PRIVATE_KEY: ${{ secrets.NUXT_FIREBASE_PRIVATE_KEY }}
       
+      - name: Copy environment variables to server directory
+        run: cp .env .output/server/.env || echo "No .env file found"
+      
       - name: Install Firebase CLI
         run: npm install -g firebase-tools@latest
       
       - name: Deploy to Firebase
-        run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}" --non-interactive
+        run: firebase deploy --only functions:server,hosting --token "${{ secrets.FIREBASE_TOKEN }}" --non-interactive
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

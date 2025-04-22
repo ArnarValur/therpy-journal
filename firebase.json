@@ -1,37 +1,39 @@
 {
+  "functions": { 
+    "source": ".output/server",
+    "runtime": "nodejs20" 
+  },
   "hosting": {
+    "site": "therapy-journal-18762",
     "public": ".output/public",
+    "cleanUrls": true,
+    "rewrites": [{ "source": "**", "function": "server" }],
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
+    "headers": [
       {
-        "source": "**/_nuxt/**",
-        "destination": "/_nuxt/**"
+        "source": "**/*.{js,css}",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=31536000"
+          }
+        ]
       },
       {
-        "source": "**",
-        "function": "server"
+        "source": "**/*.{jpg,jpeg,png,gif,webp,ico,svg}",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=31536000"
+          }
+        ]
       }
     ]
   },
-  "functions": [
-    {
-      "source": ".output/server",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log"
-      ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" install"
-      ]
-    }
-  ],
   "storage": {
     "rules": "storage.rules"
   }

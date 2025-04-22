@@ -34,6 +34,17 @@ export default defineNuxtConfig({
       }
     }]
   ],
+  nitro: {
+    preset: 'firebase',
+    firebase: {
+      gen: 2,
+      nodeVersion: '20',
+      httpsOptions: {
+        region: 'europe-west1',
+        maxInstances: 3,
+      }
+    }
+  },
   colorMode: {
     preference: 'system', // default value of $colorMode.preference
     fallback: 'light', // fallback value if not system preference found

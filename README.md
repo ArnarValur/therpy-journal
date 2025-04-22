@@ -26,86 +26,37 @@ Start the development server on `http://localhost:3000`:
 npm run dev
 ```
 
-## Production Build
-
-Build the application for production:
-
-```bash
-npm run build
-```
-
-Locally preview production build:
-
-```bash
-npm run preview
-```
-
 ## Firebase Deployment
 
-### Current Static Site Deployment
+### Firebase App Hosting (Recommended)
 
-Currently, we're using a static site deployment approach with a temporary landing page.
+This project uses Firebase App Hosting with 2nd generation Firebase Functions for server-side rendering.
 
-```bash
-npm run build
-firebase deploy --only hosting
-```
+1. Preview locally:
+   ```bash
+   npm run build:firebase
+   npm run preview:firebase
+   ```
 
-### Full SSR Deployment (To Be Implemented)
+2. Deploy to Firebase:
+   ```bash
+   npm run deploy
+   ```
 
-For a full server-side rendered application deployment:
+This will build the Nuxt app with the Firebase preset and deploy both the server functions and hosting.
 
-1. Configure firebase.json for SSR:
-```json
-{
-  "hosting": {
-    "public": ".output/public",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**/_nuxt/**",
-        "destination": "/_nuxt/**"
-      },
-      {
-        "source": "**",
-        "function": "server"
-      }
-    ]
-  },
-  "functions": [
-    {
-      "source": ".output/server",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log"
-      ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" install"
-      ]
-    }
-  ],
-  "storage": {
-    "rules": "storage.rules"
-  }
-}
-```
+### Deployment Options
 
-2. Create a proper Firebase Functions adapter for Nitro server
-   - Create a `.output/server/server.mjs` file that adapts Nitro server to Firebase Functions
-   - Configure Firebase Functions properly
+- `npm run deploy` - Deploy both hosting and server function
+- `npm run deploy:hosting` - Deploy only hosting
+- `npm run deploy:functions` - Deploy only the server function
+- `npm run deploy:all` - Deploy everything (hosting, functions, and storage rules)
 
-3. Run a full deployment:
-```bash
-npm run build
-firebase deploy
-```
+### Requirements
+
+- Firebase Blaze plan (Pay as you go)
+- Node.js 20
+- Firebase project with App Hosting enabled
 
 ## CI/CD
 
@@ -113,12 +64,12 @@ This project includes a GitHub Actions workflow for automatic deployment to Fire
 
 1. Set up the following secrets in your GitHub repository:
    - All `NUXT_FIREBASE_*` environment variables
-   - `FIREBASE_SERVICE_ACCOUNT` (JSON content from a Firebase service account)
+   - `FIREBASE_TOKEN` (generated with `firebase login:ci`)
 
 2. Push to the main branch to trigger deployment.
 
 ## Resources and Documentation
 
 - [Nuxt deployment documentation](https://nuxt.com/docs/getting-started/deployment)
-- [Firebase Hosting documentation](https://firebase.google.com/docs/hosting)
-- [Firebase Functions with Nuxt](https://firebase.google.com/docs/hosting/functions)
+- [Firebase App Hosting with Nuxt](https://nuxt.com/deploy/firebase)
+- [Firebase Functions documentation](https://firebase.google.com/docs/functions)

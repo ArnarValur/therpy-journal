@@ -4,18 +4,20 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
+    "build:firebase": "nuxt build --preset=firebase",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "preview:firebase": "firebase emulators:start",
     "postinstall": "nuxt prepare",
+    "postbuild": "cp .env .output/server/.env",
     "lint": "eslint . --ignore-pattern 'therapy-journal/**'",
     "lint:fix": "eslint . --fix --ignore-pattern 'therapy-journal/**'",
     "test": "echo \"No tests specified yet\" && exit 0",
-    "deploy": "firebase deploy --only hosting,functions",
-    "deploy:hosting": "firebase deploy --only hosting",
-    "deploy:functions": "firebase deploy --only functions",
-    "deploy:all": "firebase deploy",
-    "predeploy": "nuxt build"
+    "deploy": "nuxt build --preset=firebase && firebase deploy --only functions:server,hosting",
+    "deploy:hosting": "nuxt build --preset=firebase && firebase deploy --only hosting",
+    "deploy:functions": "nuxt build --preset=firebase && firebase deploy --only functions:server",
+    "deploy:all": "nuxt build --preset=firebase && firebase deploy"
   },
   "dependencies": {
     "@firebase/app-types": "^0.9.3",

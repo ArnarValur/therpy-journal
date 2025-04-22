@@ -67,7 +67,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
       path: $routes.AUTH.LOGIN,
       query: { 
         redirect: 'auth_required',
-        message: 'Please log in to access this page'
+        message: 'Please log in to access your journal'
       }
     });
   }
