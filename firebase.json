@@ -8,35 +8,30 @@
     ],
     "rewrites": [
       {
-        "source": "/_nuxt/**",
+        "source": "**/_nuxt/**",
         "destination": "/_nuxt/**"
       },
       {
         "source": "**",
-        "destination": "/index.html"
-      }
-    ],
-    "headers": [
-      {
-        "source": "**/*.{js,css}",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "max-age=31536000"
-          }
-        ]
-      },
-      {
-        "source": "**/*.{jpg,jpeg,png,gif,webp,ico,svg}",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "max-age=31536000"
-          }
-        ]
+        "function": "server"
       }
     ]
   },
+  "functions": [
+    {
+      "source": ".output/server",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" install"
+      ]
+    }
+  ],
   "storage": {
     "rules": "storage.rules"
   }
