@@ -1,7 +1,14 @@
+<!-- components/ThemeSelector.vue -->
 <script setup lang="ts">
 const colorMode = useColorMode();
 
-const themeOptions = [
+type ThemeOption = {
+  value: 'system' | 'light' | 'dark';
+  label: string;
+  icon: string;
+};
+
+const themeOptions: ThemeOption[] = [
   { value: 'system', label: 'System', icon: 'ri-computer-line' },
   { value: 'light', label: 'Light', icon: 'ri-sun-line' },
   { value: 'dark', label: 'Dark', icon: 'ri-moon-line' }
@@ -13,12 +20,43 @@ const currentThemeLabel = computed(() => {
   return option?.label || 'System';
 });
 
+// Check if system prefers dark mode
+const systemPrefersDark = computed(() => {
+  if (import.meta.client) {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  return false;
+});
+
 // Current value display (accounts for system detecting light/dark)
 const currentThemeValue = computed(() => {
   if (colorMode.preference === 'system') {
-    return `System (${colorMode.value === 'dark' ? 'Dark' : 'Light'})`;
+    // When in system mode, show what the system is actually detecting
+    const detectedMode = systemPrefersDark.value ? 'Dark' : 'Light';
+    return `System (${detectedMode})`;
   }
   return currentThemeLabel.value;
+});
+
+// Select theme function - to ensure proper system detection
+const selectTheme = (value: 'system' | 'light' | 'dark') => {
+  colorMode.preference = value;
+};
+
+// Set up the system preference change listener
+onMounted(() => {
+  if (import.meta.client) {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    // Update when system preference changes
+    mediaQuery.addEventListener('change', () => {
+      // Force a refresh if we're in system mode
+      if (colorMode.preference === 'system') {
+        // This forces a reactive update of computed properties
+        colorMode.preference = 'system';
+      }
+    });
+  }
 });
 </script>
 
@@ -37,9 +75,9 @@ const currentThemeValue = computed(() => {
         :class="[
           colorMode.preference === option.value ? 'theme-option-active' : 'theme-option-inactive',
         ]"
-        @click="colorMode.preference = option.value"
+        @click="selectTheme(option.value)"
       >
-        <i :class="[option.icon, 'text-2xl mb-2']" aria-hidden="true"></i>
+        <i :class="[option.icon, 'text-2xl mb-2']" aria-hidden="true" />
         <span class="text-sm">{{ option.label }}</span>
       </button>
     </div>

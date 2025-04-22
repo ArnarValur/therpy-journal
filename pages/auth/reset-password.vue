@@ -1,3 +1,4 @@
+<!-- pages/auth/reset-password.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -69,7 +70,7 @@ const onSubmit = async () => {
     
     // Redirect to login page after 3 seconds
     setTimeout(() => {
-      router.push('/login');
+      router.push('/auth/login');
     }, 3000);
   } catch (error) {
     console.error('Error resetting password:', error);
@@ -142,6 +143,7 @@ const onSubmit = async () => {
           </div>
         </div>
         
+        <!-- TODO: Add a button component -->
         <button
           type="submit"
           class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out flex justify-center items-center"
@@ -155,13 +157,13 @@ const onSubmit = async () => {
       </form>
       
       <div v-if="errorMessage && !oobCode" class="text-center mt-4">
-        <NuxtLink to="/forgot-password" class="text-blue-500 hover:underline">
+        <NuxtLink to="/auth/forgot-password" class="text-blue-500 hover:underline">
           Request a new password reset link
         </NuxtLink>
       </div>
       
       <div class="text-center text-sm pt-4">
-        <NuxtLink to="/login" class="text-blue-500 hover:underline">
+        <NuxtLink to="/auth/login" class="text-blue-500 hover:underline">
           Back to login
         </NuxtLink>
       </div>

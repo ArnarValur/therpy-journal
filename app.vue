@@ -41,7 +41,7 @@ onMounted(async () => {
     return;
   }
   
-  // Check if we have a logged-in user from browser storage
+  // TODO: Implement cookie consent check for users
   const cachedUser = localStorage.getItem('nuxt-auth-user');
   if (cachedUser) {
     // We have a cached user, just initialize in the background
@@ -86,31 +86,33 @@ onMounted(async () => {
     }
   }, { immediate: true });
 });
+
+definePageMeta({
+  middleware: ['auth', 'email-verified']
+});
 </script>
 
 <template>
-  <div :class="{ 'dark': $colorMode.value === 'dark' }">
+  <!-- Rely on Nuxt color mode to handle the dark class automatically -->
     <!-- Only show global loading when user is not logged in and still loading -->
     <GlobalLoading v-if="!authStore.user && !showContent" />
     <ErrorToast />
     
     <!-- Only show loading overlay for first-time login or logged-out users -->
     <div v-if="isClient && !authStore.user && !showContent" class="loading-overlay">
-      <div class="loading-spinner"></div>
+      <div class="loading-spinner" />
       <p>Initializing application...</p>
     </div>
     
-    <!-- Main app content - always show immediately for logged-in users -->
-    <NuxtLayout v-if="isClient && (showContent || authStore.user)">
+    <!-- Main app content - always render NuxtLayout and NuxtPage, but conditionally show content -->
+    <NuxtLayout :class="{ 'hidden': isClient && !showContent && !authStore.user }">
       <NuxtPage />
     </NuxtLayout>
     
-
     <!-- Debug: Show current theme in bottom right corner during development -->
     <div v-if="isDev" class="fixed bottom-2 right-2 text-xs py-1 px-2 bg-opacity-70 rounded theme-debug">
       Theme: {{ $colorMode.preference }} ({{ $colorMode.value }})
     </div>
-  </div>
 </template>
 
 <style scoped>

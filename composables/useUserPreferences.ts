@@ -1,14 +1,16 @@
+// composables/useUserPreferences.ts
 import { onMounted, watch, ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
-
+import { doc, updateDoc } from 'firebase/firestore';
+import { useFirestore, useDocument } from 'vuefire';
 /**
  * User preferences composable
  * Manages and persists user interface preferences like sidebar state, theme, etc.
  */
 export function useUserPreferences() {
   const authStore = useAuthStore();
-  const { $firebaseDb } = useNuxtApp();
+  const db = useFirestore();
+  const colorMode = useColorMode();
   
   // Track loading state
   const isLoading = ref(false);
@@ -22,20 +24,22 @@ export function useUserPreferences() {
   // Define type for user preferences
   interface UserPreferences {
     sidebarOpen: boolean;
+    theme?: string;
     createdAt?: Date;
     [key: string]: unknown;
   }
   
   // Load preferences from Firestore
-  const loadPreferencesFromFirestore = async (userId: string) => {
-    if (import.meta.server) return null;
-    
+  const loadPreferencesFromFirestore = async (userId: string): Promise<UserPreferences | null> => {
     try {
-      if (!$firebaseDb) return null;
+      const userRef = doc(db, 'users', userId);
+      const userDoc = await useDocument(userRef);
       
-      const prefsDoc = await getDoc(doc($firebaseDb, 'userPreferences', userId));
-      if (prefsDoc.exists()) {
-        return prefsDoc.data() as Partial<UserPreferences>;
+      if (userDoc.value) {
+        return {
+          sidebarOpen: userDoc.value.preferences?.sidebarOpen ?? true,
+          theme: userDoc.value.preferences?.theme ?? 'system'
+        };
       }
       return null;
     } catch (err) {
@@ -45,23 +49,14 @@ export function useUserPreferences() {
   };
   
   // Save preferences to Firestore
-  const savePreferencesToFirestore = async (userId: string, prefs: Partial<UserPreferences>) => {
-    if (import.meta.server) return;
-    
+  const savePreferencesToFirestore = async (userId: string, prefs: UserPreferences) => {
     try {
-      if (!$firebaseDb) return;
-      
-      const prefsRef = doc($firebaseDb, 'userPreferences', userId);
-      const prefsDoc = await getDoc(prefsRef);
-      
-      if (prefsDoc.exists()) {
-        await updateDoc(prefsRef, prefs);
-      } else {
-        await setDoc(prefsRef, {
-          ...prefs,
-          createdAt: new Date()
-        });
-      }
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        'preferences.sidebarOpen': prefs.sidebarOpen,
+        'preferences.theme': prefs.theme || colorMode.preference,
+        updatedAt: new Date()
+      });
     } catch (err) {
       console.error('Error saving preferences to Firestore:', err);
     }
@@ -89,6 +84,9 @@ export function useUserPreferences() {
               if (prefs.sidebarOpen !== undefined) {
                 sidebarOpen.value = prefs.sidebarOpen;
               }
+              if (prefs.theme) {
+                colorMode.preference = prefs.theme;
+              }
             } else {
               // If no user-specific prefs, check general preference as fallback
               const storedState = localStorage.getItem('sidebar-state');
@@ -99,17 +97,24 @@ export function useUserPreferences() {
             
             // Then check Firestore asynchronously (may update the UI later)
             const firestorePrefs = await loadPreferencesFromFirestore(authStore.user.id);
-            if (firestorePrefs && firestorePrefs.sidebarOpen !== undefined) {
-              sidebarOpen.value = firestorePrefs.sidebarOpen;
+            if (firestorePrefs) {
+              if (firestorePrefs.sidebarOpen !== undefined) {
+                sidebarOpen.value = firestorePrefs.sidebarOpen;
+              }
+              if (firestorePrefs.theme) {
+                colorMode.preference = firestorePrefs.theme;
+              }
               
               // Update localStorage to match Firestore
               localStorage.setItem(`user-prefs-${authStore.user.id}`, JSON.stringify({
-                sidebarOpen: sidebarOpen.value
+                sidebarOpen: sidebarOpen.value,
+                theme: colorMode.preference
               }));
             } else if (savedPrefs) {
               // If we have localStorage but no Firestore, save to Firestore
               await savePreferencesToFirestore(authStore.user.id, { 
-                sidebarOpen: sidebarOpen.value 
+                sidebarOpen: sidebarOpen.value,
+                theme: colorMode.preference
               });
             }
           } else {
@@ -120,7 +125,7 @@ export function useUserPreferences() {
             }
           }
         } catch (e) {
-          console.error('Error reading sidebar state', e);
+          console.error('Error reading preferences', e);
         }
       }
     } finally {
@@ -135,7 +140,10 @@ export function useUserPreferences() {
     
     if (authStore.user) {
       // For logged-in users, save user-specific preferences
-      const prefs = { sidebarOpen: sidebarOpen.value };
+      const prefs = { 
+        sidebarOpen: sidebarOpen.value,
+        theme: colorMode.preference
+      };
       
       // Save to user-specific localStorage
       localStorage.setItem(`user-prefs-${authStore.user.id}`, JSON.stringify(prefs));
@@ -155,6 +163,13 @@ export function useUserPreferences() {
     sidebarOpen.value = !sidebarOpen.value;
     savePreferences();
   };
+  
+  // Watch for theme changes
+  watch(() => colorMode.preference, () => {
+    if (authStore.user) {
+      savePreferences();
+    }
+  });
   
   // Watch for auth state changes on client-side only
   if (import.meta.client) {
@@ -177,6 +192,9 @@ export function useUserPreferences() {
             if (prefs.sidebarOpen !== undefined) {
               sidebarOpen.value = prefs.sidebarOpen;
             }
+            if (prefs.theme) {
+              colorMode.preference = prefs.theme;
+            }
           }
         } else {
           const storedState = localStorage.getItem('sidebar-state');
@@ -185,7 +203,7 @@ export function useUserPreferences() {
           }
         }
       } catch (e) {
-        console.error('Error reading sidebar state', e);
+        console.error('Error reading preferences', e);
       }
       
       // Then do full initialization asynchronously
@@ -197,6 +215,7 @@ export function useUserPreferences() {
     isLoading,
     sidebarOpen,
     toggleSidebar,
-    initPreferences
+    initPreferences,
+    savePreferences
   };
 } 

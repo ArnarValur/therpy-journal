@@ -1,3 +1,4 @@
+<!-- components/ErrorToast.vue -->
 <script setup lang="ts">
 const { currentError, isErrorShown, clearError } = useErrorHandler();
 

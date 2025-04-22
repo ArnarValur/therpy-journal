@@ -1,3 +1,4 @@
+<!-- components/ThemeToggle.vue -->
 <script setup lang="ts">
 const colorMode = useColorMode();
 
@@ -5,7 +6,15 @@ const isDark = computed(() => colorMode.value === 'dark');
 
 // Function to toggle between light and dark modes
 const toggleTheme = () => {
-  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark';
+  // If we're in system mode, we need to toggle between light and dark
+  // while keeping the preference as system
+  if (colorMode.preference === 'system') {
+    // Force a specific theme while keeping system preference
+    colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark';
+  } else {
+    // Toggle between light and dark directly
+    colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark';
+  }
 };
 </script>
 

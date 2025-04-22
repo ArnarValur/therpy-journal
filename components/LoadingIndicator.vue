@@ -1,3 +1,4 @@
+<!-- components/LoadingIndicator.vue -->
 <script setup lang="ts">
 defineProps({
   size: {

@@ -1,3 +1,4 @@
+// composables/useLogout.ts
 import { ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
@@ -8,16 +9,17 @@ import { useAuthStore } from '~/stores/auth';
 export function useLogout() {
   const authStore = useAuthStore();
   const router = useRouter();
+  const { $routes } = useNuxtApp();
   const isLoggingOut = ref(false);
   const error = ref<string | null>(null);
   
   /**
    * Performs the logout operation and redirects to login page
-   * @param redirectTo Optional path to redirect after logout (defaults to /login)
+   * @param redirectTo Optional path to redirect after logout (defaults to $routes.AUTH.LOGIN)
    * @param showMessage Whether to show a success message after logout (defaults to true)
    * @returns Promise resolving to success status
    */
-  const logout = async (redirectTo = '/login', showMessage = true) => {
+  const logout = async (redirectTo = $routes.AUTH.LOGIN, showMessage = true) => {
     if (isLoggingOut.value) return { success: false };
     
     isLoggingOut.value = true;
