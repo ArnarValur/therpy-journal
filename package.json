@@ -1,5 +1,5 @@
 {
-  "name": "nuxt-app",
+  "name": "therapy-journal",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,7 +7,12 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "deploy": "firebase deploy --only hosting,functions",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:all": "firebase deploy",
+    "predeploy": "nuxt build"
   },
   "dependencies": {
     "@firebase/app-types": "^0.9.3",
