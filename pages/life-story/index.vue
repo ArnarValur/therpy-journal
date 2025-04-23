@@ -6,6 +6,7 @@ import EntryButton from '~/components/buttons/EntryButton.vue';
 import OpenButton from '~/components/buttons/OpenButton.vue';
 import EditButton from '~/components/buttons/EditButton.vue';
 import DeleteButton from '~/components/buttons/DeleteButton.vue';
+import FilterButton from '~/components/buttons/FilterButton.vue';
 import { useActionHandler } from '~/composables/useActionHandler';
 import { useModalSystem } from '~/composables/useModalSystem';
 import type { LifeStoryEntry } from '~/types/lifeStory';
@@ -37,7 +38,7 @@ const yearOptions = computed(() => {
 const {
   execute: executeDelete,
   isLoading: isDeleting,
-  error: _deleteError,
+  error: deleteError,
 } = useActionHandler<string, boolean>({
   actionFn: deleteLifeStory,
   confirmation: {
@@ -187,82 +188,53 @@ const handleEditStory = (event: Event, id: string) => {
     </div>
       
     <!-- Filter options -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 border border-gray-100 dark:border-gray-700">
       <div class="flex flex-col md:flex-row gap-4 items-end">
         <div class="flex-grow">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Filter by granularity
           </label>
           <div class="flex flex-wrap gap-2">
-            <button 
-              :class="[
-                'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                granularityFilter === 'all' 
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              ]"
+            <FilterButton 
+              :is-active="granularityFilter === 'all'"
               @click="granularityFilter = 'all'" 
             >
               All
-            </button>
-            <button 
-              :class="[
-                'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                granularityFilter === 'day' 
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              ]"
+            </FilterButton>
+            <FilterButton 
+              :is-active="granularityFilter === 'day'"
               @click="granularityFilter = 'day'" 
             >
               Day
-            </button>
-            <button 
-              :class="[
-                'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                granularityFilter === 'month' 
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              ]"
+            </FilterButton>
+            <FilterButton 
+              :is-active="granularityFilter === 'month'"
               @click="granularityFilter = 'month'" 
             >
               Month
-            </button>
-            <button 
-              :class="[
-                'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                granularityFilter === 'year' 
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              ]"
+            </FilterButton>
+            <FilterButton 
+              :is-active="granularityFilter === 'year'"
               @click="granularityFilter = 'year'" 
             >
               Year
-            </button>
-            <button 
-              :class="[
-                'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                granularityFilter === 'range' 
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              ]"
+            </FilterButton>
+            <FilterButton 
+              :is-active="granularityFilter === 'range'"
               @click="granularityFilter = 'range'" 
             >
               Range
-            </button>
-            <button 
-              :class="[
-                'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                granularityFilter === 'era' 
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              ]"
+            </FilterButton>
+            <FilterButton 
+              :is-active="granularityFilter === 'era'"
               @click="granularityFilter = 'era'" 
             >
               Era
-            </button>
+            </FilterButton>
           </div>
         </div>
         
+        <!-- TODO: only show years that have entries -->
         <div class="w-full md:w-48">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Year
@@ -280,7 +252,7 @@ const handleEditStory = (event: Event, id: string) => {
 
     <!-- Loading state -->
     <div v-if="isLoading || pending" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
     </div>
 
     <!-- Error state -->
@@ -290,9 +262,9 @@ const handleEditStory = (event: Event, id: string) => {
     </div>
     
     <!-- Empty state -->
-    <div v-else-if="!filteredEntries.length && (!pending && !isLoading)" class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
+    <div v-else-if="!filteredEntries.length && (!pending && !isLoading)" class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center border border-gray-100 dark:border-gray-700">
       <div class="mx-auto w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
-        <i class="ri-book-open-line text-4xl text-blue-500"></i>
+        <i class="ri-book-open-line text-4xl text-blue-500" />
       </div>
       <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Start Your Life Story</h3>
       <p class="text-gray-600 dark:text-gray-300 mb-6">Record meaningful moments, periods, and eras from your life journey</p>
@@ -301,36 +273,33 @@ const handleEditStory = (event: Event, id: string) => {
         Create Your First Entry
       </EntryButton>
     </div>
-    
+
     <!-- Life stories list -->
     <div v-else-if="filteredEntries.length" class="space-y-4">
       <div 
         v-for="entry in filteredEntries" 
         :key="entry.id" 
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow cursor-pointer"
-        @click="handleViewStory(entry.id)"
+        class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow overflow-hidden"
       >
-        <div class="p-4 sm:p-6">
+
+        <!-- Life Story Card -->
+        <div class="p-5 sm:p-6">
+          <!-- Title -->
           <div class="flex items-start justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ entry.encryptedTitle }}</h3>
-            
-            <div class="flex space-x-2">
-              <OpenButton @click="handleViewStory(entry.id)" />
-              <EditButton @click="(e) => handleEditStory(e, entry.id)" />
-              <DeleteButton @click="(e) => requestDeleteStory(e, entry.id)" :is-loading="isDeleting" />
-            </div>
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.Title }}</h3>
           </div>
-          
-          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-gray-600 dark:text-gray-300 mb-4">
+
+          <!-- Date and Location -->
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 text-sm text-gray-500 dark:text-gray-400">
             <!-- Event date/time period -->
             <div class="flex items-center">
-              <i class="ri-calendar-line mr-2 text-gray-400 dark:text-gray-500"></i>
+              <i class="ri-calendar-line mr-2 text-gray-400 dark:text-gray-500" />
               <span>{{ formatEventDate(entry) }}</span>
             </div>
             
             <!-- Location if available -->
             <div v-if="entry.location?.country || entry.location?.city" class="flex items-center">
-              <i class="ri-map-pin-line mr-2 text-gray-400 dark:text-gray-500"></i>
+              <i class="ri-map-pin-line mr-2 text-gray-400 dark:text-gray-500" />
               <span>
                 {{ [entry.location.city, entry.location.country].filter(Boolean).join(', ') }}
               </span>
@@ -338,15 +307,42 @@ const handleEditStory = (event: Event, id: string) => {
           </div>
           
           <!-- Preview of content (truncated) -->
-          <p class="text-gray-600 dark:text-gray-300 line-clamp-2">
-            {{ entry.encryptedContent }}
-          </p>
+          <div class="mt-3 text-gray-600 dark:text-gray-300 line-clamp-2 prose dark:prose-invert max-w-none">
+            <div v-html="entry.Content" />
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3 flex justify-end space-x-2">
+          <OpenButton 
+            @click="handleViewStory(entry.id as string)" 
+          >
+            <i class="ri-eye-line mr-1" />
+            Open
+          </OpenButton>
+          <EditButton 
+            @click="(e) => handleEditStory(e, entry.id as string)" 
+          >
+            <i class="ri-edit-line mr-1" />
+            Edit
+          </EditButton>
+          <DeleteButton 
+            :disabled="isDeleting"
+            @click="(e) => requestDeleteStory(e, entry.id as string)"
+          >
+            <i v-if="!isDeleting" class="ri-delete-bin-line mr-1" />
+            <i v-else class="ri-loader-line animate-spin mr-1" />
+            {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          </DeleteButton>
+        </div>
+        <div v-if="deleteError && !isDeleting" class="text-red-500 text-sm p-3">
+          {{ deleteError.message }}
         </div>
       </div>
     </div>
     
     <!-- No results after filtering -->
-    <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
+    <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center border border-gray-100 dark:border-gray-700">
       <p class="text-gray-600 dark:text-gray-300">No life stories match your filters</p>
       <button 
         class="mt-4 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"

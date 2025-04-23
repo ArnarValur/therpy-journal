@@ -69,7 +69,7 @@ const navigateToRegister = () => {
               <i class="ri-shield-check-line text-3xl" />
             </div>
             <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Private & Secure</h3>
-            <p class="text-gray-600 dark:text-gray-300">Your journal entries are encrypted and only accessible to you.</p>
+            <p class="text-gray-600 dark:text-gray-300">Your journal entries are  and only accessible to you.</p>
           </div>
           
           <div class="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-sm">

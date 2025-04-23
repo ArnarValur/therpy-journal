@@ -359,7 +359,7 @@ onBeforeUnmount(async () => {
     </div>
 
     <!-- Entry form -->
-    <div v-if="!loadingEntry" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div v-if="!loadingEntry" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-700">
       <!-- Title input -->
       <div class="mb-6">
         <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

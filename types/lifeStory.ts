@@ -5,13 +5,13 @@ export type LifeStoryGranularity = 'day' | 'month' | 'year' | 'range' | 'era';
 export interface LifeStoryLocation {
   country?: string | null;
   city?: string | null;
-  encryptedDetails?: string | null; // Client-side encrypted
+  Details?: string | null; // Client-side 
 }
 
 // Define structure for custom fields (decided on array of objects approach)
 export interface CustomField {
    fieldName: string;
-   encryptedValue: string; // Client-side encrypted
+   Value: string; // Client-side 
 }
 export type LifeStoryCustomFields = CustomField[];
 
@@ -20,8 +20,8 @@ export interface LifeStoryEntry {
   userId: string;
   createdAt: Timestamp; // Use Firestore Timestamp type for consistency
   updatedAt: Timestamp; // Use Firestore Timestamp type
-  encryptedTitle: string; // Client-side encrypted
-  encryptedContent: string; // Client-side encrypted (rich text)
+  Title: string; // Client-side 
+  Content: string; // Client-side  (rich text)
   eventTimestamp: Timestamp; // Primary timestamp for sorting/filtering
   eventGranularity: LifeStoryGranularity;
   eventEndDate?: Timestamp | null; // For 'range' granularity
@@ -38,12 +38,19 @@ export interface FirestoreLifeStoryDoc {
   userId: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  encryptedTitle: string;
-  encryptedContent: string;
+  Title: string; // Encrypted
+  Content: string; // Encrypted
   eventTimestamp: Timestamp;
-  eventGranularity: LifeStoryGranularity;
+  eventGranularity: string; // Encrypted LifeStoryGranularity
   eventEndDate?: Timestamp | null;
-  eventLabel?: string | null;
-  location?: LifeStoryLocation | null; // Structure might need encrypted values within
-  customFields?: LifeStoryCustomFields | null; // Structure might need encrypted values within
+  eventLabel?: string | null; // Encrypted
+  location?: {
+    country?: string | null; // Encrypted
+    city?: string | null; // Encrypted
+    Details?: string | null; // Encrypted
+  } | null;
+  customFields?: {
+    fieldName: string; // Encrypted
+    Value: string; // Encrypted
+  }[] | null;
 } 

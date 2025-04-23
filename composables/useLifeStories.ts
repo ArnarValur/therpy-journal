@@ -7,8 +7,8 @@ import { useEncryption } from '~/composables/useEncryption';
 import type { 
   LifeStoryEntry, 
   FirestoreLifeStoryDoc, 
-  LifeStoryLocation, 
-  CustomField, 
+  LifeStoryLocation,
+  LifeStoryGranularity,
   LifeStoryCustomFields 
 } from '~/types/lifeStory';
 
@@ -43,18 +43,18 @@ export const useLifeStories = () => {
       let decryptedLocation: LifeStoryLocation | null = null;
       if (storyDoc.location) {
         decryptedLocation = {
-          country: storyDoc.location.country,
-          city: storyDoc.location.city,
-          encryptedDetails: storyDoc.location.encryptedDetails ? decrypt(storyDoc.location.encryptedDetails) : null
+          country: storyDoc.location.country ? decrypt(storyDoc.location.country) : null,
+          city: storyDoc.location.city ? decrypt(storyDoc.location.city) : null,
+          Details: storyDoc.location.Details ? decrypt(storyDoc.location.Details) : null
         };
       }
 
       // Decrypt custom fields if they exist
       let decryptedCustomFields: LifeStoryCustomFields | null = null;
       if (storyDoc.customFields) {
-        decryptedCustomFields = storyDoc.customFields.map((field: CustomField) => ({
-          fieldName: field.fieldName,
-          encryptedValue: decrypt(field.encryptedValue)
+        decryptedCustomFields = storyDoc.customFields.map((field: {fieldName: string, Value: string}) => ({
+          fieldName: decrypt(field.fieldName),
+          Value: decrypt(field.Value)
         }));
       }
 
@@ -64,12 +64,12 @@ export const useLifeStories = () => {
         userId: storyDoc.userId,
         createdAt: storyDoc.createdAt,
         updatedAt: storyDoc.updatedAt,
-        encryptedTitle: decrypt(storyDoc.encryptedTitle),
-        encryptedContent: decrypt(storyDoc.encryptedContent),
+        Title: decrypt(storyDoc.Title),
+        Content: decrypt(storyDoc.Content),
         eventTimestamp: storyDoc.eventTimestamp,
-        eventGranularity: storyDoc.eventGranularity,
+        eventGranularity: decrypt(storyDoc.eventGranularity) as LifeStoryGranularity,
         eventEndDate: storyDoc.eventEndDate || null,
-        eventLabel: storyDoc.eventLabel || null,
+        eventLabel: storyDoc.eventLabel ? decrypt(storyDoc.eventLabel) : null,
         location: decryptedLocation,
         customFields: decryptedCustomFields
       } as LifeStoryEntry;
@@ -97,10 +97,10 @@ export const useLifeStories = () => {
         userId: userId.value,
         createdAt: now,
         updatedAt: now,
-        encryptedTitle: encrypt(data.encryptedTitle),
-        encryptedContent: encrypt(data.encryptedContent),
+        Title: encrypt(data.Title),
+        Content: encrypt(data.Content),
         eventTimestamp: data.eventTimestamp,
-        eventGranularity: data.eventGranularity
+        eventGranularity: encrypt(data.eventGranularity)
       };
 
       // Add optional fields if they exist
@@ -109,23 +109,23 @@ export const useLifeStories = () => {
       }
 
       if (data.eventLabel) {
-        storyData.eventLabel = data.eventLabel;
+        storyData.eventLabel = encrypt(data.eventLabel || '');
       }
 
       // Encrypt location details if they exist
       if (data.location) {
         storyData.location = {
-          country: data.location.country,
-          city: data.location.city,
-          encryptedDetails: data.location.encryptedDetails ? encrypt(data.location.encryptedDetails) : null
+          country: data.location.country ? encrypt(data.location.country) : null,
+          city: data.location.city ? encrypt(data.location.city) : null,
+          Details: data.location.Details ? encrypt(data.location.Details) : null
         };
       }
 
       // Encrypt custom fields if they exist
       if (data.customFields && data.customFields.length > 0) {
         storyData.customFields = data.customFields.map(field => ({
-          fieldName: field.fieldName,
-          encryptedValue: encrypt(field.encryptedValue)
+          fieldName: encrypt(field.fieldName),
+          Value: encrypt(field.Value)
         }));
       }
 
@@ -166,12 +166,12 @@ export const useLifeStories = () => {
       };
 
       // Only encrypt and update fields that are included in the updates
-      if (updates.encryptedTitle !== undefined) {
-        updateData.encryptedTitle = encrypt(updates.encryptedTitle);
+      if (updates.Title !== undefined) {
+        updateData.Title = encrypt(updates.Title);
       }
 
-      if (updates.encryptedContent !== undefined) {
-        updateData.encryptedContent = encrypt(updates.encryptedContent);
+      if (updates.Content !== undefined) {
+        updateData.Content = encrypt(updates.Content);
       }
 
       if (updates.eventTimestamp !== undefined) {
@@ -179,7 +179,7 @@ export const useLifeStories = () => {
       }
 
       if (updates.eventGranularity !== undefined) {
-        updateData.eventGranularity = updates.eventGranularity;
+        updateData.eventGranularity = encrypt(updates.eventGranularity);
       }
 
       if (updates.eventEndDate !== undefined) {
@@ -187,7 +187,7 @@ export const useLifeStories = () => {
       }
 
       if (updates.eventLabel !== undefined) {
-        updateData.eventLabel = updates.eventLabel;
+        updateData.eventLabel = encrypt(updates.eventLabel || '');
       }
 
       // Handle location updates if provided
@@ -196,10 +196,10 @@ export const useLifeStories = () => {
           updateData.location = null;
         } else {
           updateData.location = {
-            country: updates.location.country,
-            city: updates.location.city,
-            encryptedDetails: updates.location.encryptedDetails 
-              ? encrypt(updates.location.encryptedDetails) 
+            country: updates.location.country ? encrypt(updates.location.country) : null,
+            city: updates.location.city ? encrypt(updates.location.city) : null,
+            Details: updates.location.Details 
+              ? encrypt(updates.location.Details) 
               : null
           };
         }
@@ -211,8 +211,8 @@ export const useLifeStories = () => {
           updateData.customFields = null;
         } else {
           updateData.customFields = updates.customFields.map(field => ({
-            fieldName: field.fieldName,
-            encryptedValue: encrypt(field.encryptedValue)
+            fieldName: encrypt(field.fieldName),
+            Value: encrypt(field.Value)
           }));
         }
       }
