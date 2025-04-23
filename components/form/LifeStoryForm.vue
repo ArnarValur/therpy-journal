@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase/firestore';
 import JournalEditor from '~/components/editor/JournalEditor.vue';
 import SaveButton from '~/components/buttons/SaveButton.vue';
 import CancelButton from '~/components/buttons/CancelButton.vue';
+import EntryButton from '~/components/buttons/EntryButton.vue';
 import type { 
   LifeStoryEntry, 
   LifeStoryGranularity, 
@@ -190,10 +191,11 @@ function handleCancel() {
 </script>
 
 <template>
-  <form class="space-y-6" @submit.prevent="handleSubmit">
+  <form class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-100 dark:border-gray-700" @submit.prevent="handleSubmit">
+
     <!-- Title input -->
-    <div>
-      <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    <div class="mb-6">
+      <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         Title <span class="text-red-500">*</span>
       </label>
       <input
@@ -201,14 +203,15 @@ function handleCancel() {
         v-model="title"
         type="text"
         required
-        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
         placeholder="Enter a title for your story"
+        :class="{ 'border-red-500': !isTitleValid && title.length > 0 }"
       >
     </div>
 
     <!-- Content editor -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+    <div class="mb-6 relative">
+      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         Content <span class="text-red-500">*</span>
       </label>
       <JournalEditor 
@@ -216,6 +219,16 @@ function handleCancel() {
         @update="handleEditorUpdate" 
       />
     </div>
+
+    <!-- TODO: Add autosave status -->
+    <!-- Autosave status -->
+    <!--<div 
+        v-if="autosaveStatus" 
+        class="absolute bottom-0 right-0 translate-y-full pt-2 text-sm text-gray-500 dark:text-gray-400"
+      >
+        {{ autosaveStatus }}
+      </div>
+    </div>-->
 
     <!-- Time period selection -->
     <div class="space-y-4">
@@ -229,7 +242,7 @@ function handleCancel() {
           v-for="option in ['day', 'month', 'year', 'range', 'era']" 
           :key="option"
           :class="[
-            'px-3 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer',
+            'px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer',
             granularity === option 
               ? 'bg-blue-500 text-white'
               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -256,7 +269,7 @@ function handleCancel() {
             id="eventDate"
             v-model="eventDate"
             type="date"
-            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
         </div>
         
@@ -269,7 +282,7 @@ function handleCancel() {
             id="eventMonth"
             v-model="eventMonth"
             type="month"
-            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
         </div>
         
@@ -281,7 +294,7 @@ function handleCancel() {
           <select
             id="eventYear"
             v-model="eventYear"
-            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
             <option value="" disabled>Select a year</option>
             <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
@@ -289,7 +302,7 @@ function handleCancel() {
         </div>
         
         <!-- Range granularity -->
-        <div v-if="granularity === 'range'" class="mt-2 space-y-4">
+        <div v-if="granularity === 'range'" class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label for="startDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Start Date
@@ -298,7 +311,7 @@ function handleCancel() {
               id="startDate"
               v-model="eventDate"
               type="date"
-              class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
           </div>
           
@@ -310,7 +323,7 @@ function handleCancel() {
               id="endDate"
               v-model="eventEndDate"
               type="date"
-              class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
           </div>
         </div>
@@ -324,7 +337,7 @@ function handleCancel() {
             id="eraLabel"
             v-model="eventLabel"
             type="text"
-            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder="e.g., Childhood, College Years, First Job"
           >
         </div>
@@ -332,7 +345,7 @@ function handleCancel() {
     </div>
 
     <!-- Location details -->
-    <div class="space-y-4">
+    <div class="space-y-4 mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <h3 class="text-lg font-medium text-gray-900 dark:text-white">Location (Optional)</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -344,7 +357,7 @@ function handleCancel() {
             id="country"
             v-model="country"
             type="text"
-            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder="Country name"
           >
         </div>
@@ -357,7 +370,7 @@ function handleCancel() {
             id="city"
             v-model="city"
             type="text"
-            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder="City name"
           >
         </div>
@@ -371,18 +384,18 @@ function handleCancel() {
           id="locationDetails"
           v-model="locationDetails"
           rows="3"
-          class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           placeholder="Additional location details"
         />
       </div>
     </div>
 
     <!-- Custom fields -->
-    <div class="space-y-4">
+    <div class="space-y-4 mt-4 border-t border-gray-200 dark:border-gray-700 pt-4 pb-4">
       <h3 class="text-lg font-medium text-gray-900 dark:text-white">Custom Fields (Optional)</h3>
       
       <!-- Existing custom fields -->
-      <div v-if="customFields.length > 0" class="space-y-3">
+      <div v-if="customFields.length > 0" class="">
         <div 
           v-for="(field, index) in customFields" 
           :key="index"
@@ -412,7 +425,7 @@ function handleCancel() {
             id="fieldName"
             v-model="newFieldName"
             type="text"
-            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder="e.g., Mood, Weather, People"
           >
         </div>
@@ -425,31 +438,40 @@ function handleCancel() {
             id="fieldValue"
             v-model="newFieldValue"
             type="text"
-            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Value"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="e.g., Good, Rainy, Family"
           >
         </div>
       </div>
       
-      <button 
+      <EntryButton 
         type="button" 
-        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        class="inline-flex items-center px-3 py-2 border border-transparent leading-4 rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         :disabled="!newFieldName.trim() || !newFieldValue.trim()"
         @click="addCustomField"
       >
         <i class="ri-add-line mr-1" />
         Add Field
-      </button>
+      </EntryButton>
     </div>
 
     <!-- Form actions -->
     <div class="flex justify-end space-x-3 pt-4 border-t dark:border-gray-700">
-      <CancelButton @click="handleCancel" />
+      <CancelButton 
+        type="button" 
+        @click="handleCancel" 
+      >
+        Cancel
+      </CancelButton>
+
       <SaveButton 
         type="submit" 
         :disabled="!isFormValid || isSubmitting" 
         :is-loading="isSubmitting"
-      />
+      >
+        <i v-if="isSubmitting" class="ri-loader-4-line animate-spin mr-2" />
+        Save Story
+      </SaveButton>
     </div>
   </form>
 </template> 
