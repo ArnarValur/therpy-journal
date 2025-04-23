@@ -19,6 +19,12 @@ export default defineNuxtPlugin((_nuxtApp) => {
       EDIT: (id: string) => `/journal/edit/${id}`,
       VIEW: (id: string) => `/journal/${id}`
     },
+    LIFE_STORY: {
+      HOME: '/life-story',
+      NEW: '/life-story/new',
+      EDIT: (id: string) => `/life-story/edit/${id}`,
+      VIEW: (id: string) => `/life-story/${id}`
+    },
     DASHBOARD: '/dashboard',
     LANDING: '/landing',
     HOME: '/'
