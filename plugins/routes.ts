@@ -19,6 +19,8 @@ export default defineNuxtPlugin((_nuxtApp) => {
       EDIT: (id: string) => `/journal/edit/${id}`,
       VIEW: (id: string) => `/journal/${id}`
     },
+    DASHBOARD: '/dashboard',
+    LANDING: '/landing',
     HOME: '/'
   };
 
@@ -28,7 +30,9 @@ export default defineNuxtPlugin((_nuxtApp) => {
     routes.AUTH.REGISTER,
     routes.AUTH.FORGOT_PASSWORD,
     routes.AUTH.RESET_PASSWORD,
-    routes.AUTH.VERIFY_EMAIL
+    routes.AUTH.VERIFY_EMAIL,
+    routes.LANDING,
+    routes.HOME // Home route is public as it handles redirections
   ];
 
   return {
