@@ -216,10 +216,12 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
   <div class="space-y-6 sm:space-y-8 p-4 sm:p-6 bg-gray-50 dark:bg-transparent rounded-lg">
 
     <!-- Header section and new entry button -->
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">My Journals</h1>
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">My Journals</h1>
+      </div>
       <EntryButton 
-        class="text-white"
+        class="text-white "
         @click="handleNewEntry"
       >
         <i class="ri-add-line mr-2" />

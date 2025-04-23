@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useFeedback, type Feedback } from '~/composables/useFeedback';
 
@@ -8,7 +8,7 @@ definePageMeta({
   middleware: ['admin'] // You need to implement this middleware to protect admin routes
 });
 
-const { getAllFeedback, markAsRead, isAdmin, isLoading, error } = useFeedback();
+const { getAllFeedback, markAsRead, deleteFeedback, isAdmin, isLoading, error } = useFeedback();
 const feedbackList = ref<Feedback[]>([]);
 const router = useRouter();
 const unreadCount = ref(0);
@@ -29,6 +29,14 @@ const changePage = (page: number) => {
   // Scroll to top of the list
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
+
+// Watch for changes in total pages and adjust current page if needed
+watch(totalPages, (newTotalPages) => {
+  // If current page is greater than total pages, set to last page
+  if (currentPage.value > newTotalPages && newTotalPages > 0) {
+    currentPage.value = newTotalPages;
+  }
+});
 
 // Load feedback on page mount
 onMounted(async () => {
@@ -54,6 +62,16 @@ const handleMarkAsRead = async (id: string) => {
     }
   }
 };
+
+const handleDeleteFeedback = async (id: string) => {
+  const success = await deleteFeedback(id);
+  if (success) {
+    feedbackList.value = feedbackList.value.filter(f => f.id !== id);
+    // Update unread count if the deleted feedback was unread
+    unreadCount.value = feedbackList.value.filter(f => !f.isRead).length;
+  }
+};
+
 </script>
 
 <template>
@@ -92,12 +110,21 @@ const handleMarkAsRead = async (id: string) => {
         >
           <div class="flex justify-between items-center mb-2">
             <h3 class="text-lg font-semibold">{{ item.title }}</h3>
-            <span 
-              v-if="!item.isRead" 
-              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100"
-            >
-              Unread
-            </span>
+            <div class="flex items-center space-x-3">
+              <span 
+                v-if="!item.isRead" 
+                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100"
+              >
+                Unread
+              </span>
+              <button 
+                class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                aria-label="Delete feedback"
+                @click="handleDeleteFeedback(item.id!)"
+              >
+                Delete
+              </button>
+            </div>
           </div>
           
           <p class="text-gray-700 dark:text-gray-300 whitespace-pre-wrap mb-4">{{ item.feedback }}</p>
@@ -124,6 +151,7 @@ const handleMarkAsRead = async (id: string) => {
             class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600"
             :class="currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
             @click="changePage(currentPage - 1)" 
+            aria-label="Previous page"
           >
             <i class="ri-arrow-left-s-line" />
           </button>
@@ -143,6 +171,7 @@ const handleMarkAsRead = async (id: string) => {
             class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600"
             :class="currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100 dark:hover:bg-gray-700'"
             @click="changePage(currentPage + 1)" 
+            aria-label="Next page"
           >
             <i class="ri-arrow-right-s-line" />
           </button>

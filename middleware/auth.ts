@@ -59,7 +59,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     console.log('Redirecting unauthenticated user to login');
     
     // Store the intended destination to redirect after login
-    if (to.fullPath !== $routes.HOME) {
+    if (to.fullPath !== $routes.HOME && to.fullPath !== $routes.LANDING) {
       sessionStorage.setItem('authRedirect', to.fullPath);
     }
     
@@ -72,15 +72,22 @@ export default defineNuxtRouteMiddleware(async (to) => {
     });
   }
 
+  // If user is logged in and trying to access landing page, redirect to dashboard
+  if (authStore.isLoggedIn && authStore.isEmailVerified && 
+    to.path === $routes.LANDING) {
+    console.log('Redirecting authenticated user from landing to dashboard');
+    return navigateTo($routes.DASHBOARD);
+  }
+  
   // If user is logged in and trying to access auth pages
   if (authStore.isLoggedIn && authStore.isEmailVerified && 
     (to.path === $routes.AUTH.LOGIN || to.path === $routes.AUTH.REGISTER || to.path === $routes.AUTH.VERIFY_EMAIL)) {
     console.log('Redirecting authenticated user to dashboard');
-    return navigateTo($routes.HOME);
+    return navigateTo($routes.DASHBOARD);
   }
   
   // Check if there's a stored redirect path after successful authentication
-  if (authStore.isLoggedIn && authStore.isEmailVerified && to.path === $routes.HOME && import.meta.client) {
+  if (authStore.isLoggedIn && authStore.isEmailVerified && to.path === $routes.DASHBOARD && import.meta.client) {
     const redirectPath = sessionStorage.getItem('authRedirect');
     if (redirectPath) {
       sessionStorage.removeItem('authRedirect');

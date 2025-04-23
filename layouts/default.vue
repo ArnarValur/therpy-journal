@@ -24,6 +24,10 @@ const toggleMobileMenu = () => {
 };
 
 const confirmLogout = () => {
+  // Close mobile menu first if it's open
+  if (isMobileMenuOpen.value) {
+    isMobileMenuOpen.value = false;
+  }
   showLogoutConfirm.value = true;
 };
 
@@ -75,7 +79,9 @@ const closeFeedbackModal = () => {
   <div class="min-h-screen app-bg flex flex-col md:flex-row">
     <!-- Mobile header - only visible on small screens -->
     <header class="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-800 sticky top-0 z-30 shadow-md">
-      <h1 class="font-bold primary-text">TherapyJournal</h1>
+      <NuxtLink to="/" class="flex items-center">
+        <h1 class="font-bold primary-text">TherapyJournal</h1>
+      </NuxtLink>
       <button
         class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         aria-label="Toggle mobile menu"

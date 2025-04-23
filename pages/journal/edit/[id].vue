@@ -64,19 +64,19 @@ const debouncedAutosave = useDebounceFn(async () => {
   
   // Check if the entry ID is valid
   if (!currentEntryId) {
-    console.warn('Autosave skipped: No entry ID found');
+    //console.warn('Autosave skipped: No entry ID found');
     isAutosaving.value = false;
     return;
   }
 
   // Check auth state directly
   if (!authStore.isLoggedIn || !authStore.user?.id ) {
-    console.warn('Autosave skipped: Not authenticated');
+    //console.warn('Autosave skipped: Not authenticated');
     isAutosaving.value = false;
     return;
   }
   if (!title.value && !content.value) {
-    console.warn('Autosave skipped: No title or content');
+    //console.warn('Autosave skipped: No title or content');
     isAutosaving.value = false;
     return;
   }
