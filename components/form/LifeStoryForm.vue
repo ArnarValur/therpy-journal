@@ -469,6 +469,10 @@ function handleCancel() {
         :disabled="!isFormValid || isSubmitting" 
         :is-loading="isSubmitting"
       >
+<<<<<<< HEAD
+=======
+        <i v-if="isSubmitting" class="ri-loader-4-line animate-spin mr-2" />
+>>>>>>> d85ac983ec5cb5e1e74cb4ae4b47fea664b9fe2c
         Save Story
       </SaveButton>
     </div>
