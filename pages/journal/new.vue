@@ -4,6 +4,7 @@ import { ref, onMounted } from 'vue';
 import { useNuxtApp } from '#app';
 import { tryOnBeforeUnmount } from '@vueuse/core';
 import JournalEntryForm from '~/components/form/JournalEntryForm.vue';
+import { useAutosave, type AutosavableData } from '~/composables/useAutosave';
 
 // Get required composables
 const { createEntry, updateEntry } = useJournalEntry();
@@ -11,27 +12,53 @@ const authStore = useAuthStore();
 const router = useRouter();
 const { $routes } = useNuxtApp();
 
-// Journal entry state
-const isLoading = ref(false);
-const error = ref<string | null>(null);
-const draftId = ref<string | null>(null);
-const isAutosaving = ref(false);
-const lastAutosaveTime = ref<Date | null>(null);
-const isSaving = ref(false);
-const isManualSaving = ref(false);
-
-// Form data
-const formData = ref<{
+// Define type for journal entry data
+interface JournalEntryData extends AutosavableData {
   title: string;
   content: string | null;
   tags: string[];
   sentiments: Record<string, number>;
-}>({
-  title: '',
-  content: null,
-  tags: [],
-  sentiments: {}
+}
+
+// Create the save function for the autosave composable
+const saveJournalEntry = async (data: JournalEntryData, isDraft: boolean): Promise<string | boolean> => {
+  const entry = {
+    title: data.title || (isDraft ? 'Untitled Draft' : ''),
+    content: data.content || '<p></p>', // Use HTML content directly
+    tags: data.tags || [],
+    sentiments: data.sentiments || {},
+    isDraft
+  };
+
+  // If we have an existing draft ID, update it
+  if (autosave.entityId.value) {
+    const success = await updateEntry(autosave.entityId.value, entry);
+    return success;
+  } else {
+    // Create a new entry
+    const result = await createEntry(entry);
+    if (result?.id) {
+      return result.id;
+    }
+    return false;
+  }
+};
+
+// Initialize the autosave composable
+const autosave = useAutosave<JournalEntryData>({
+  initialData: {
+    title: '',
+    content: null,
+    tags: [],
+    sentiments: {}
+  },
+  saveFn: saveJournalEntry,
+  debounceMs: 2000
 });
+
+// For backward compatibility
+const isLoading = ref(false);
+const error = ref<string | null>(null);
 
 // Check if user is authenticated
 onMounted(async () => {
@@ -49,144 +76,46 @@ const handleSubmit = async (data: {
   sentiments: Record<string, number>;
   isDraft: boolean;
 }) => {
-  isManualSaving.value = true;
   isLoading.value = true;
   error.value = null;
 
   try {
-    const entry = {
-      title: data.title,
-      content: data.content || '<p></p>', // Use HTML content directly
-      tags: data.tags,
-      sentiments: data.sentiments,
-      isDraft: false // Explicitly mark as not a draft
-    };
-
-    let success = false;
-    // Get current draft ID
-    const currentDraftId = draftId.value;
-
-    if (currentDraftId) {
-      // Update the existing entry and mark it as not a draft
-      success = await updateEntry(currentDraftId, entry);
-    } else {
-      // Create new entry
-      const result = await createEntry(entry);
-      if (result?.id) {
-        draftId.value = result.id;
-        success = true;
-      } else {
-        console.error('Failed to create new entry');
-        error.value = 'Failed to save entry';
-        success = false;
-      }
-    }
-
+    const success = await autosave.saveData(data, false);
+    
     if (success) {
       await router.push($routes.JOURNAL.HOME);
     } else {
-      isManualSaving.value = false;
-      isLoading.value = false;
-      console.error('Failed to save entry');
-      error.value = 'Failed to save entry';
+      error.value = autosave.error.value || 'Failed to save entry';
     }
   } catch (err) {
-    isManualSaving.value = false;
-    isLoading.value = false;
     console.error('Failed to save entry:', err);
     error.value = 'Failed to save entry';
   } finally {
-    if (!isManualSaving.value) {
-      isLoading.value = false;
-    }
+    isLoading.value = false;
+    autosave.finishSaving();
   }
 };
 
 // Handle form update for autosave
-const handleFormUpdate = async (data: {
+const handleFormUpdate = (data: {
   title: string;
   content: string | null;
   tags: string[];
   sentiments: Record<string, number>;
 }) => {
-  // Don't autosave if we're in the middle of a manual save
-  if (isSaving.value || isManualSaving.value) return;
-
-  // Store current form data for later use
-  formData.value = data;
-
-  const currentEntryId = draftId.value;
-
-  if (!data.title && !data.content) return;
-  
-  isAutosaving.value = true;
-  
-  try {
-    const entry = {
-      title: data.title,
-      content: data.content || '<p></p>', // Use HTML content directly
-      tags: data.tags || [],
-      sentiments: data.sentiments,
-      isDraft: true // Always mark as draft when autosaving
-    };
-
-    if (currentEntryId) {
-      // Update existing draft
-      await updateEntry(currentEntryId, entry);
-    } else {
-      // Create new draft
-      const result = await createEntry(entry);
-      if (result?.id) {
-        draftId.value = result.id;
-      }
-    }
-    
-    lastAutosaveTime.value = new Date();
-  } catch (err) {
-    console.error('Autosave failed:', err);
-  } finally {
-    isAutosaving.value = false;
-  }
-};
-
-// Function to ensure entry is saved as draft when navigating away
-const saveAsDraft = async () => {
-  // Skip if we never started writing anything
-  if ((!formData.value.title && !formData.value.content) || isManualSaving.value) return;  
-  try {
-    const entry = {
-      title: formData.value.title || 'Untitled Draft',
-      content: formData.value.content || '<p></p>',
-      tags: formData.value.tags || [],
-      sentiments: formData.value.sentiments,
-      isDraft: true // Explicitly mark as draft
-    };
-
-    // If we already have a draft ID, update it
-    if (draftId.value) {
-      await updateEntry(draftId.value, entry);
-    } else {
-      // Otherwise create a new draft entry
-      const result = await createEntry(entry);
-      if (result?.id) {
-        draftId.value = result.id;
-      }
-    }
-  } catch (err) {
-    console.error('Failed to save as draft:', err);
-  }
+  autosave.updateFormData(data);
 };
 
 // Handle Cancel button click - explicitly mark as draft
 const handleCancel = async () => {
-  await saveAsDraft();
+  await autosave.saveAsDraft();
   router.push($routes.JOURNAL.HOME);
 };
 
 // Add cleanup to ensure drafts are saved when navigating away
 tryOnBeforeUnmount(async () => {
   // Save as draft if needed
-  await saveAsDraft();
+  await autosave.saveAsDraft();
 });
 </script>
 
@@ -225,8 +154,8 @@ tryOnBeforeUnmount(async () => {
     <!-- Journal Entry form -->
     <JournalEntryForm
       :is-submitting="isLoading"
-      :is-autosaving="isAutosaving"
-      :last-autosave-time="lastAutosaveTime"
+      :is-autosaving="autosave.isAutosaving.value"
+      :last-autosave-time="autosave.lastAutosaveTime.value"
       @submit="handleSubmit"
       @cancel="handleCancel"
       @update="handleFormUpdate"

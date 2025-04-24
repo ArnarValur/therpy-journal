@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '~/stores/auth';
 import { useNuxtApp } from '#app';
 import { useJournalEntry } from '~/composables/useJournalEntry';
-import { useDebounceFn } from '@vueuse/core';
+import { useAutosave, type AutosavableData } from '~/composables/useAutosave';
 
 import JournalEntryForm from '~/components/form/JournalEntryForm.vue';
 
@@ -15,28 +15,56 @@ const router = useRouter();
 const entryId = computed(() => route.params.id as string);
 
 // Get required composables
-const { getEntry, updateEntry, isLoading, error } = useJournalEntry();
+const { getEntry, updateEntry, isLoading: apiLoading, error: apiError } = useJournalEntry();
 const authStore = useAuthStore();
 const { $routes } = useNuxtApp();
 
 // Journal entry state
 const loadingEntry = ref(true);
 const entryIsDraft = ref(false);
-const isAutosaving = ref(false);
-const lastAutosaveTime = ref<Date | null>(null);
 
-// Form data
-const formData = ref<{
+// Define type for journal entry data
+interface JournalEntryData extends AutosavableData {
   title: string;
   content: string | null;
   tags: string[];
   sentiments: Record<string, number>;
-}>({
+}
+
+// Initial data for the form (will be populated after loading)
+const initialData = ref<JournalEntryData>({
   title: '',
   content: null,
   tags: [],
   sentiments: {}
 });
+
+// Create the save function for the autosave composable
+const saveJournalEntry = async (data: JournalEntryData, isDraft: boolean): Promise<boolean> => {
+  if (!entryId.value) return false;
+  
+  const updatedEntry = {
+    title: data.title || (isDraft ? 'Untitled Draft' : ''),
+    content: data.content || '<p></p>',
+    tags: data.tags || [],
+    sentiments: data.sentiments || {},
+    isDraft: isDraft // Use the isDraft parameter
+  };
+
+  return await updateEntry(entryId.value, updatedEntry);
+};
+
+// Initialize the autosave composable
+const autosave = useAutosave<JournalEntryData>({
+  initialData: initialData.value,
+  saveFn: saveJournalEntry,
+  debounceMs: 2000,
+  entityId: entryId
+});
+
+// For backward compatibility
+const isLoading = computed(() => apiLoading.value);
+const error = computed(() => apiError.value || autosave.error.value);
 
 // Check if user is authenticated and load journal entry
 onMounted(async () => {
@@ -62,12 +90,15 @@ const loadJournalEntry = async () => {
     }
     
     // Populate the form data
-    formData.value = {
+    initialData.value = {
       title: entry.title,
       content: entry.content,
       tags: entry.tags || [],
       sentiments: entry.sentiments || {}
     };
+    
+    // Update autosave form data
+    autosave.updateFormData(initialData.value);
     
     // Keep track of whether this is a draft
     entryIsDraft.value = entry.isDraft || false;
@@ -78,52 +109,6 @@ const loadJournalEntry = async () => {
   }
 };
 
-// Create a debounced autosave function
-const debouncedAutosave = useDebounceFn(async (data: {
-  title: string;
-  content: string | null;
-  tags: string[];
-  sentiments: Record<string, number>;
-}) => {
-  const currentEntryId = entryId.value;
-  
-  // Check if the entry ID is valid
-  if (!currentEntryId) {
-    isAutosaving.value = false;
-    return;
-  }
-
-  // Check auth state directly
-  if (!authStore.isLoggedIn || !authStore.user?.id) {
-    isAutosaving.value = false;
-    return;
-  }
-  
-  if (!data.title && !data.content) {
-    isAutosaving.value = false;
-    return;
-  }
-  
-  isAutosaving.value = true;
-  
-  try {
-    const updatedEntry = {
-      title: data.title,
-      content: data.content || '<p></p>',
-      tags: data.tags || [],
-      sentiments: data.sentiments || {},
-      isDraft: true // Mark as draft when autosaving
-    };
-
-    await updateEntry(currentEntryId, updatedEntry);
-    lastAutosaveTime.value = new Date();
-  } catch (err) {
-    console.error('Autosave failed:', err);
-  } finally {
-    isAutosaving.value = false;
-  }
-}, 2000);
-
 // Handle form submission
 const handleSubmit = async (data: {
   title: string;
@@ -132,18 +117,16 @@ const handleSubmit = async (data: {
   sentiments: Record<string, number>;
   isDraft: boolean;
 }) => {
-  const updatedEntry = {
-    title: data.title,
-    content: data.content || '<p></p>',
-    tags: data.tags,
-    sentiments: data.sentiments,
-    isDraft: false // Mark as not a draft when explicitly saving
-  };
-
-  const success = await updateEntry(entryId.value, updatedEntry);
-  
-  if (success) {
-    await router.push($routes.JOURNAL.HOME);
+  try {
+    const success = await autosave.saveData(data, false);
+    
+    if (success) {
+      await router.push($routes.JOURNAL.HOME);
+    }
+  } catch (err) {
+    console.error('Error saving journal entry:', err);
+  } finally {
+    autosave.finishSaving();
   }
 };
 
@@ -154,43 +137,19 @@ const handleFormUpdate = (data: {
   tags: string[];
   sentiments: Record<string, number>;
 }) => {
-  // Update local form data
-  formData.value = data;
-  
-  // Trigger autosave
-  debouncedAutosave(data);
-};
-
-// Function to ensure entry is saved as draft when navigating away
-const saveAsDraft = async () => {
-  // Skip if we haven't changed anything
-  if (!formData.value.title && !formData.value.content) return;
-  
-  try {
-    const entry = {
-      title: formData.value.title || 'Untitled Draft',
-      content: formData.value.content || '<p></p>',
-      tags: formData.value.tags || [],
-      sentiments: formData.value.sentiments || {},
-      isDraft: true // Explicitly mark as draft
-    };
-
-    await updateEntry(entryId.value, entry);
-  } catch (err) {
-    console.error('Failed to save as draft:', err);
-  }
+  autosave.updateFormData(data);
 };
 
 // Handle Cancel button click - explicitly mark as draft and redirect
 const handleCancel = async () => {
-  await saveAsDraft();
+  await autosave.saveAsDraft();
   router.push($routes.JOURNAL.HOME);
 };
 
 // Clean up before component unmount
 onBeforeUnmount(async () => {
   // Save as draft if needed before unmounting
-  await saveAsDraft();
+  await autosave.saveAsDraft();
 });
 </script>
 
@@ -232,10 +191,10 @@ onBeforeUnmount(async () => {
     <!-- Journal Entry Form -->
     <JournalEntryForm
       v-if="!loadingEntry"
-      :initial-data="formData"
+      :initial-data="initialData"
       :is-submitting="isLoading"
-      :is-autosaving="isAutosaving"
-      :last-autosave-time="lastAutosaveTime"
+      :is-autosaving="autosave.isAutosaving.value"
+      :last-autosave-time="autosave.lastAutosaveTime.value"
       @submit="handleSubmit"
       @cancel="handleCancel"
       @update="handleFormUpdate"
