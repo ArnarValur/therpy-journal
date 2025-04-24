@@ -157,7 +157,16 @@ const handleBack = () => {
       <!-- Header with actions -->
       <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ currentStory.Title }}</h1>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ currentStory.Title }}</h1>
+            <span 
+              v-if="currentStory.isDraft" 
+              class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
+            >
+              <i class="ri-draft-line mr-1" />
+              Draft
+            </span>
+          </div>
           <div class="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
             <!-- Time period -->
             <div class="flex items-center">
@@ -174,8 +183,6 @@ const handleBack = () => {
             </div>
           </div>
         </div>
-        
-        
       </div>
       
       <!-- Content -->

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Timestamp } from 'firebase/firestore';
 import JournalEditor from '~/components/editor/JournalEditor.vue';
 import SaveButton from '~/components/buttons/SaveButton.vue';
@@ -15,15 +15,19 @@ import type {
 interface Props {
   initialData?: Partial<LifeStoryEntry>;
   isSubmitting?: boolean;
+  isAutosaving?: boolean;
+  lastAutosaveTime?: Date | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   initialData: () => ({}),
-  isSubmitting: false
+  isSubmitting: false,
+  isAutosaving: false,
+  lastAutosaveTime: null
 });
 
 const emit = defineEmits<{
-  (e: 'submit', data: Omit<LifeStoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): void;
+  (e: 'submit' | 'update', data: Omit<LifeStoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): void;
   (e: 'cancel'): void;
 }>();
 
@@ -119,17 +123,98 @@ function addCustomField() {
     });
     newFieldName.value = '';
     newFieldValue.value = '';
+    
+    // Emit update for autosave
+    emitUpdate();
   }
 }
 
 // Function to remove a custom field
 function removeCustomField(index: number) {
   customFields.value.splice(index, 1);
+  
+  // Emit update for autosave
+  emitUpdate();
 }
 
 // Update editor content
 function handleEditorUpdate(html: string) {
   content.value = html;
+  
+  // Emit update for autosave
+  emitUpdate();
+}
+
+// Format time of last autosave
+const formattedAutosaveTime = computed(() => {
+  if (!props.lastAutosaveTime) return '';
+  return props.lastAutosaveTime.toLocaleTimeString();
+});
+
+// Autosave status message
+const autosaveStatus = computed(() => {
+  if (props.isAutosaving) {
+    return 'Saving...';
+  }
+  if (props.lastAutosaveTime) {
+    return `Last saved at ${formattedAutosaveTime.value}`;
+  }
+  return '';
+});
+
+// Watch for changes in form fields and emit updates for autosave
+watch([title, granularity, eventDate, eventMonth, eventYear, eventEndDate, eventLabel, country, city, locationDetails], () => {
+  emitUpdate();
+}, { deep: true });
+
+// Function to emit current form data for autosave
+function emitUpdate() {
+  let eventTimestamp: Date;
+  
+  switch (granularity.value) {
+    case 'day':
+      eventTimestamp = eventDate.value ? new Date(eventDate.value) : new Date();
+      break;
+    case 'month':
+      eventTimestamp = eventMonth.value ? new Date(`${eventMonth.value}-01`) : new Date();
+      break;
+    case 'year':
+      eventTimestamp = eventYear.value ? new Date(Number(eventYear.value), 0, 1) : new Date();
+      break;
+    case 'range':
+      eventTimestamp = eventDate.value ? new Date(eventDate.value) : new Date();
+      break;
+    case 'era':
+      eventTimestamp = new Date(); // Current date as placeholder
+      break;
+    default:
+      eventTimestamp = new Date();
+  }
+
+  // Prepare location data
+  const location: LifeStoryLocation | null = (country.value || city.value || locationDetails.value) 
+    ? {
+        country: country.value,
+        city: city.value,
+        Details: locationDetails.value
+      }
+    : null;
+
+  // Build the form data
+  const formData = {
+    Title: title.value,
+    Content: content.value,
+    eventTimestamp: Timestamp.fromDate(eventTimestamp),
+    eventGranularity: granularity.value,
+    eventEndDate: eventEndDate.value 
+      ? Timestamp.fromDate(new Date(eventEndDate.value)) 
+      : null,
+    eventLabel: eventLabel.value || null,
+    location,
+    customFields: customFields.value.length > 0 ? customFields.value : null
+  };
+
+  emit('update', formData);
 }
 
 // Handle form submission
@@ -218,17 +303,15 @@ function handleCancel() {
         :initial-content="content" 
         @update="handleEditorUpdate" 
       />
-    </div>
-
-    <!-- TODO: Add autosave status -->
-    <!-- Autosave status -->
-    <!--<div 
+      
+      <!-- Autosave status -->
+      <div 
         v-if="autosaveStatus" 
         class="absolute bottom-0 right-0 translate-y-full pt-2 text-sm text-gray-500 dark:text-gray-400"
       >
         {{ autosaveStatus }}
       </div>
-    </div>-->
+    </div>
 
     <!-- Time period selection -->
     <div class="space-y-4">

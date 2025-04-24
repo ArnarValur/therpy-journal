@@ -90,15 +90,18 @@ const loadJournalEntry = async () => {
     }
     
     // Populate the form data
-    initialData.value = {
+    const loadedData: JournalEntryData = {
       title: entry.title,
       content: entry.content,
       tags: entry.tags || [],
       sentiments: entry.sentiments || {}
     };
     
-    // Update autosave form data
-    autosave.updateFormData(initialData.value);
+    // Update initial data ref
+    initialData.value = { ...loadedData };
+    
+    // Set original data in autosave to track changes properly
+    autosave.setOriginalData(loadedData);
     
     // Keep track of whether this is a draft
     entryIsDraft.value = entry.isDraft || false;
@@ -142,13 +145,14 @@ const handleFormUpdate = (data: {
 
 // Handle Cancel button click - explicitly mark as draft and redirect
 const handleCancel = async () => {
+  // Will only save as draft if changes were made
   await autosave.saveAsDraft();
   router.push($routes.JOURNAL.HOME);
 };
 
 // Clean up before component unmount
 onBeforeUnmount(async () => {
-  // Save as draft if needed before unmounting
+  // Will only save as draft if changes were made
   await autosave.saveAsDraft();
 });
 </script>
@@ -161,7 +165,7 @@ onBeforeUnmount(async () => {
       <div class="flex items-center gap-2">
         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">Edit Journal Entry</h1>
         <span 
-          v-if="entryIsDraft"
+          v-if="entryIsDraft || autosave.dataHasChanged.value"
           class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
         >
           <i class="ri-draft-line mr-1" />

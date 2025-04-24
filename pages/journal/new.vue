@@ -20,6 +20,14 @@ interface JournalEntryData extends AutosavableData {
   sentiments: Record<string, number>;
 }
 
+// Initial data for the new entry form
+const initialData: JournalEntryData = {
+  title: '',
+  content: null,
+  tags: [],
+  sentiments: {}
+};
+
 // Create the save function for the autosave composable
 const saveJournalEntry = async (data: JournalEntryData, isDraft: boolean): Promise<string | boolean> => {
   const entry = {
@@ -46,12 +54,7 @@ const saveJournalEntry = async (data: JournalEntryData, isDraft: boolean): Promi
 
 // Initialize the autosave composable
 const autosave = useAutosave<JournalEntryData>({
-  initialData: {
-    title: '',
-    content: null,
-    tags: [],
-    sentiments: {}
-  },
+  initialData,
   saveFn: saveJournalEntry,
   debounceMs: 2000
 });
@@ -66,6 +69,9 @@ onMounted(async () => {
     await router.push($routes.AUTH.LOGIN);
     return;
   }
+  
+  // Set the original data for proper change tracking
+  autosave.setOriginalData(initialData);
 });
 
 // Handle form submission
@@ -106,15 +112,16 @@ const handleFormUpdate = (data: {
   autosave.updateFormData(data);
 };
 
-// Handle Cancel button click - explicitly mark as draft
+// Handle Cancel button click
 const handleCancel = async () => {
+  // Will only save as draft if changes were made
   await autosave.saveAsDraft();
   router.push($routes.JOURNAL.HOME);
 };
 
 // Add cleanup to ensure drafts are saved when navigating away
 tryOnBeforeUnmount(async () => {
-  // Save as draft if needed
+  // Will only save as draft if changes were made
   await autosave.saveAsDraft();
 });
 </script>
@@ -127,6 +134,7 @@ tryOnBeforeUnmount(async () => {
       <div class="flex items-center gap-2">
         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">New Journal Entry</h1>
         <span 
+          v-if="autosave.dataHasChanged.value"
           class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
         >
           <i class="ri-draft-line mr-1" />

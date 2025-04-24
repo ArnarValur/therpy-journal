@@ -71,7 +71,8 @@ export const useLifeStories = () => {
         eventEndDate: storyDoc.eventEndDate || null,
         eventLabel: storyDoc.eventLabel ? decrypt(storyDoc.eventLabel) : null,
         location: decryptedLocation,
-        customFields: decryptedCustomFields
+        customFields: decryptedCustomFields,
+        isDraft: storyDoc.isDraft || false
       } as LifeStoryEntry;
     });
   });
@@ -100,7 +101,8 @@ export const useLifeStories = () => {
         Title: encrypt(data.Title),
         Content: encrypt(data.Content),
         eventTimestamp: data.eventTimestamp,
-        eventGranularity: encrypt(data.eventGranularity)
+        eventGranularity: encrypt(data.eventGranularity),
+        isDraft: data.isDraft || false
       };
 
       // Add optional fields if they exist
@@ -215,6 +217,11 @@ export const useLifeStories = () => {
             Value: encrypt(field.Value)
           }));
         }
+      }
+
+      // Add handling for isDraft field
+      if (updates.isDraft !== undefined) {
+        updateData.isDraft = updates.isDraft;
       }
 
       // Update the document in Firestore

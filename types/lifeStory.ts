@@ -28,6 +28,7 @@ export interface LifeStoryEntry {
   eventLabel?: string | null; // Descriptive label (era, range)
   location?: LifeStoryLocation | null;
   customFields?: LifeStoryCustomFields | null;
+  isDraft?: boolean; // Flag for draft status
 }
 
 // Type for raw data fetched from Firestore before decryption
@@ -53,4 +54,5 @@ export interface FirestoreLifeStoryDoc {
     fieldName: string; // Encrypted
     Value: string; // Encrypted
   }[] | null;
+  isDraft?: boolean; // Flag for draft status
 } 

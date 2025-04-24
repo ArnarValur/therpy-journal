@@ -2,15 +2,20 @@
 import { onMounted, ref, computed } from 'vue';
 import { useLifeStories } from '~/composables/useLifeStories';
 import { useAuthStore } from '~/stores/auth';
+import { useActionHandler } from '~/composables/useActionHandler';
+import { useModalSystem } from '~/composables/useModalSystem';
+import type { LifeStoryEntry } from '~/types/lifeStory';
+import type { Timestamp } from 'firebase/firestore';
+
+// Components
 import EntryButton from '~/components/buttons/EntryButton.vue';
 import OpenButton from '~/components/buttons/OpenButton.vue';
 import EditButton from '~/components/buttons/EditButton.vue';
 import DeleteButton from '~/components/buttons/DeleteButton.vue';
 import FilterButton from '~/components/buttons/FilterButton.vue';
-import { useActionHandler } from '~/composables/useActionHandler';
-import { useModalSystem } from '~/composables/useModalSystem';
-import type { LifeStoryEntry } from '~/types/lifeStory';
-import type { Timestamp } from 'firebase/firestore';
+import ConfirmationModal from '~/components/modals/ConfirmationModal.vue';
+
+// Use the modal system to get state and actions
 useModalSystem();
 
 // Get the life stories composable
@@ -255,13 +260,13 @@ const handleEditStory = (event: Event, id: string) => {
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
     </div>
 
-    <!-- Error state -->
-    <div v-else-if="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-center">
+    <!-- Error message -->
+    <div v-else-if="error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/30 dark:border-red-800">
       <p class="text-red-700 dark:text-red-400">{{ error.message || 'An error occurred loading your life stories' }}</p>
       <button class="mt-2 text-red-600 dark:text-red-400 underline" @click="error = null">Try Again</button>
     </div>
     
-    <!-- Empty state -->
+    <!-- No stories yet message -->
     <div v-else-if="!filteredEntries.length && (!pending && !isLoading)" class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center border border-gray-100 dark:border-gray-700">
       <div class="mx-auto w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
         <i class="ri-book-open-line text-4xl text-blue-500" />
@@ -286,7 +291,18 @@ const handleEditStory = (event: Event, id: string) => {
         <div class="p-5 sm:p-6">
           <!-- Title -->
           <div class="flex items-start justify-between mb-3">
-            <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.Title }}</h3>
+            <div class="flex items-center gap-2">
+              <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.Title }}</h3>
+              
+              <!-- Draft tag -->
+              <span 
+                v-if="entry.isDraft" 
+                class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
+              >
+                <i class="ri-draft-line mr-1" />
+                Draft
+              </span>
+            </div>
           </div>
 
           <!-- Date and Location -->
@@ -352,4 +368,17 @@ const handleEditStory = (event: Event, id: string) => {
       </button>
     </div>
   </div>
+
+  <!-- Confirmation modal -->
+  <ConfirmationModal />
 </template> 
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style> 

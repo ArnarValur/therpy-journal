@@ -2,8 +2,16 @@
 import { onMounted, ref, computed, watch } from 'vue';
 import { useLifeStories } from '~/composables/useLifeStories';
 import { useAuthStore } from '~/stores/auth';
+import { tryOnBeforeUnmount } from '@vueuse/core';
 import LifeStoryForm from '~/components/form/LifeStoryForm.vue';
-import type { LifeStoryEntry } from '~/types/lifeStory';
+import type { 
+  LifeStoryEntry, 
+  LifeStoryGranularity, 
+  LifeStoryLocation, 
+  CustomField 
+} from '~/types/lifeStory';
+import { useAutosave } from '~/composables/useAutosave';
+import type { Timestamp } from 'firebase/firestore';
 
 // Get router and route configurations
 const router = useRouter();
@@ -17,6 +25,14 @@ const storyId = computed(() => route.params.id as string);
 const authStore = useAuthStore();
 const { lifeStories, updateLifeStory, error, pending } = useLifeStories();
 
+// Error message for user display
+const errorMessage = computed(() => {
+  if (error.value instanceof Error) {
+    return error.value.message;
+  }
+  return null;
+});
+
 // Component state
 const isSubmitting = ref(false);
 const submissionError = ref<string | null>(null);
@@ -29,6 +45,51 @@ const currentStory = computed(() => {
   return lifeStories.value.find(story => story.id === storyId.value);
 });
 
+// Define the form data interface
+interface LifeStoryFormData {
+  title?: string;
+  content?: string;
+  eventDate?: Timestamp;
+  granularity?: LifeStoryGranularity;
+  endDate?: Timestamp | null;
+  label?: string | null;
+  location?: LifeStoryLocation | null;
+  customFields?: CustomField[] | null;
+}
+
+// Create the save function for the autosave composable
+const saveLifeStory = async (data: Partial<LifeStoryFormData>, isDraft: boolean): Promise<string | boolean | null> => {
+  if (!storyId.value) return false;
+  
+  const formattedData: Partial<Omit<LifeStoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>> = {
+    Title: data.title,
+    Content: data.content,
+    eventTimestamp: data.eventDate,
+    eventGranularity: data.granularity,
+    eventEndDate: data.endDate || null,
+    eventLabel: data.label || null,
+    location: data.location || null,
+    customFields: data.customFields || null,
+    isDraft
+  };
+  
+  try {
+    const success = await updateLifeStory(storyId.value, formattedData);
+    return success ? storyId.value : false;
+  } catch (err) {
+    console.error('Error saving life story:', err);
+    return false;
+  }
+};
+
+// Initialize the autosave composable
+const autosave = useAutosave<Partial<LifeStoryFormData>>({
+  initialData: {},
+  saveFn: saveLifeStory,
+  debounceMs: 2000,
+  entityId: storyId
+});
+
 // Watch for data loading completion
 watch(pending, (isPending) => {
   if (!isPending) {
@@ -37,6 +98,18 @@ watch(pending, (isPending) => {
     // Verify the story exists
     if (!currentStory.value) {
       loadError.value = 'Life story not found';
+    } else {
+      // Initialize the autosave with the loaded data
+      autosave.setOriginalData({
+        title: currentStory.value.Title,
+        content: currentStory.value.Content,
+        eventDate: currentStory.value.eventTimestamp,
+        granularity: currentStory.value.eventGranularity,
+        endDate: currentStory.value.eventEndDate,
+        label: currentStory.value.eventLabel,
+        location: currentStory.value.location,
+        customFields: currentStory.value.customFields
+      });
     }
   }
 });
@@ -57,7 +130,16 @@ const handleSubmit = async (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'cr
   submissionError.value = null;
   
   try {
-    const success = await updateLifeStory(storyId.value, formData);
+    const success = await autosave.saveData({
+      title: formData.Title,
+      content: formData.Content,
+      eventDate: formData.eventTimestamp,
+      granularity: formData.eventGranularity,
+      endDate: formData.eventEndDate,
+      label: formData.eventLabel,
+      location: formData.location,
+      customFields: formData.customFields
+    }, false);
     
     if (success) {
       // Redirect to the life story view page
@@ -67,25 +149,58 @@ const handleSubmit = async (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'cr
     }
   } catch (err) {
     console.error('Error updating life story:', err);
-    submissionError.value = error.value?.message || 'An unexpected error occurred.';
+    submissionError.value = errorMessage.value ?? 'An unexpected error occurred.';
   } finally {
     isSubmitting.value = false;
+    autosave.finishSaving();
   }
 };
 
+// Handle form updates for autosave
+const handleFormUpdate = (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+  autosave.updateFormData({
+    title: formData.Title,
+    content: formData.Content,
+    eventDate: formData.eventTimestamp,
+    granularity: formData.eventGranularity,
+    endDate: formData.eventEndDate,
+    label: formData.eventLabel,
+    location: formData.location,
+    customFields: formData.customFields
+  });
+};
+
 // Handle cancel
-const handleCancel = () => {
+const handleCancel = async () => {
+  // Will only save as draft if changes were made
+  await autosave.saveAsDraft();
+  
   if (storyId.value) {
     router.push($routes.LIFE_STORY.VIEW(storyId.value));
   } else {
     router.push($routes.LIFE_STORY.HOME);
   }
 };
+
+// Clean up before component unmount
+tryOnBeforeUnmount(async () => {
+  // Will only save as draft if changes were made
+  await autosave.saveAsDraft();
+});
 </script>
 
 <template>
   <div class="container px-4 py-8 mx-auto">
-    <h1 class="text-2xl font-bold mb-6">Edit Life Story</h1>
+    <div class="flex items-center gap-2 mb-6">
+      <h1 class="text-2xl font-bold">Edit Life Story</h1>
+      <span 
+        v-if="autosave.dataHasChanged.value"
+        class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
+      >
+        <i class="ri-draft-line mr-1" />
+        Draft
+      </span>
+    </div>
     
     <!-- Loading state -->
     <div v-if="isLoading" class="p-8 text-center">
@@ -111,7 +226,10 @@ const handleCancel = () => {
       <LifeStoryForm 
         :initial-data="currentStory" 
         :is-submitting="isSubmitting"
+        :is-autosaving="autosave.isAutosaving.value"
+        :last-autosave-time="autosave.lastAutosaveTime.value"
         @submit="handleSubmit"
+        @update="handleFormUpdate"
         @cancel="handleCancel"
       />
       
