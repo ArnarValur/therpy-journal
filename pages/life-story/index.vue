@@ -1,3 +1,4 @@
+<!-- pages/life-story/index.vue -->
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
 import { useLifeStories } from '~/composables/useLifeStories';
@@ -30,13 +31,45 @@ const router = useRouter();
 // Filter state
 const granularityFilter = ref('all');
 const yearFilter = ref<number | null>(null);
-const currentYear = new Date().getFullYear();
 const yearOptions = computed(() => {
+  // Use the year range computed from the life stories
+  if (!yearRange.value) return [];
   const options = [];
-  for (let i = currentYear; i >= currentYear - 100; i--) {
-    options.push(i);
+  for (let year = yearRange.value.max; year >= yearRange.value.min; year--) {
+    options.push(year);
   }
   return options;
+});
+
+// Compute a set of unique years from the life stories
+const entryYears = computed(() => {
+  const years = new Set<number>();
+  lifeStories.value.forEach(entry => {
+    const date = ensureDate(entry.eventTimestamp);
+    if (date) {
+      years.add(date.getFullYear());
+    }
+    // Check eventEndDate if granularity is range
+    if (entry.eventGranularity === 'range' && entry.eventEndDate) {
+      const endDate = ensureDate(entry.eventEndDate);
+      if (endDate) {
+        years.add(endDate.getFullYear());
+      }
+    }
+  });
+  return years;
+});
+
+// Compute the minimum and maximum years from available entry years
+const yearRange = computed(() => {
+  if (entryYears.value.size === 0) 
+  return null;
+
+  const yearsArray = Array.from(entryYears.value);
+  return {
+    min: Math.min(...yearsArray),
+    max: Math.max(...yearsArray)
+  };
 });
 
 // Delete story state
@@ -56,6 +89,7 @@ const {
   onError: (err, id) => { console.error(`Error deleting story ${id}:`, err); }
 });
 
+// Request delete story
 const requestDeleteStory = (event: Event, id: string) => {
   event.stopPropagation();
   executeDelete(id);
@@ -137,17 +171,20 @@ const filteredEntries = computed(() => {
   }
   
   // Filter by year
-  if (yearFilter.value) {
-    const year = yearFilter.value;
-    
-    filtered = filtered.filter(entry => {
-      if (!entry.eventTimestamp) return false;
-      
-      const date = ensureDate(entry.eventTimestamp);
-      return date ? date.getFullYear() === year : false;
-    });
-  }
-  
+  if (yearFilter.value !== null) { // Check if a year is selected
+  const selectedYear = yearFilter.value;
+
+  filtered = filtered.filter(entry => {
+    // Ensure there's a start timestamp
+    if (!entry.eventTimestamp) return false;
+
+    const date = ensureDate(entry.eventTimestamp); // Use your existing helper
+
+    // Simply check if the entry's year matches the selected year
+    return date ? date.getFullYear() === selectedYear : false;
+  });
+}
+
   return filtered;
 });
 
@@ -292,7 +329,7 @@ const handleEditStory = (event: Event, id: string) => {
           <!-- Title -->
           <div class="flex items-start justify-between mb-3">
             <div class="flex items-center gap-2">
-              <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.Title }}</h3>
+              <h3 class="text-xl font-semibold text-gray-800 dark:text-white">{{ entry.title }}</h3>
               
               <!-- Draft tag -->
               <span 
@@ -324,7 +361,7 @@ const handleEditStory = (event: Event, id: string) => {
           
           <!-- Preview of content (truncated) -->
           <div class="mt-3 text-gray-600 dark:text-gray-300 line-clamp-2 prose dark:prose-invert max-w-none">
-            <div v-html="entry.Content" />
+            <div v-html="entry.content" />
           </div>
         </div>
 

@@ -1,3 +1,4 @@
+<!-- pages/life-story/[id].vue -->
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue';
 import { useLifeStories } from '~/composables/useLifeStories';
@@ -158,7 +159,7 @@ const handleBack = () => {
       <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ currentStory.Title }}</h1>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ currentStory.title }}</h1>
             <span 
               v-if="currentStory.isDraft" 
               class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full dark:bg-yellow-900/30 dark:text-yellow-300"
@@ -188,7 +189,7 @@ const handleBack = () => {
       <!-- Content -->
       <div class="p-6">
         <!-- Content rendered as HTML -->
-        <div class="prose dark:prose-invert max-w-none" v-html="currentStory.Content" />
+        <div class="prose dark:prose-invert max-w-none" v-html="currentStory.content" />
         
         <!-- Delete error message if any -->
         <div v-if="deleteError" class="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">

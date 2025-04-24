@@ -1,5 +1,4 @@
-<!-- components/FeedbackModal.vue -->
-
+<!-- components/modals/FeedbackModal.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
 import { addDoc, collection } from 'firebase/firestore';

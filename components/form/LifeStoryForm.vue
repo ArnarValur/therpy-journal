@@ -1,3 +1,4 @@
+<!-- components/form/LifeStoryForm.vue -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { Timestamp } from 'firebase/firestore';
@@ -32,8 +33,8 @@ const emit = defineEmits<{
 }>();
 
 // Form state
-const title = ref(props.initialData?.Title || '');
-const content = ref<string>(props.initialData?.Content || '');
+const title = ref(props.initialData?.title || '');
+const content = ref<string>(props.initialData?.content || '');
 const granularity = ref<LifeStoryGranularity>(props.initialData?.eventGranularity || 'day');
 
 // Date-related fields
@@ -202,8 +203,8 @@ function emitUpdate() {
 
   // Build the form data
   const formData = {
-    Title: title.value,
-    Content: content.value,
+    title: title.value,
+    content: content.value,
     eventTimestamp: Timestamp.fromDate(eventTimestamp),
     eventGranularity: granularity.value,
     eventEndDate: eventEndDate.value 
@@ -254,8 +255,8 @@ function handleSubmit() {
 
   // Build the form data
   const formData = {
-    Title: title.value,
-    Content: content.value,
+    title: title.value,
+    content: content.value,
     eventTimestamp: Timestamp.fromDate(eventTimestamp),
     eventGranularity: granularity.value,
     eventEndDate: eventEndDate.value 

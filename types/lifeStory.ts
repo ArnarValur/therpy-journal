@@ -20,8 +20,8 @@ export interface LifeStoryEntry {
   userId: string;
   createdAt: Timestamp; // Use Firestore Timestamp type for consistency
   updatedAt: Timestamp; // Use Firestore Timestamp type
-  Title: string; // Client-side 
-  Content: string; // Client-side  (rich text)
+  title: string; // Client-side 
+  content: string; // Client-side  (rich text)
   eventTimestamp: Timestamp; // Primary timestamp for sorting/filtering
   eventGranularity: LifeStoryGranularity;
   eventEndDate?: Timestamp | null; // For 'range' granularity
@@ -39,8 +39,8 @@ export interface FirestoreLifeStoryDoc {
   userId: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  Title: string; // Encrypted
-  Content: string; // Encrypted
+  title: string; // Encrypted
+  content: string; // Encrypted
   eventTimestamp: Timestamp;
   eventGranularity: string; // Encrypted LifeStoryGranularity
   eventEndDate?: Timestamp | null;

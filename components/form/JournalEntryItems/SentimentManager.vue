@@ -1,3 +1,4 @@
+<!-- components/form/JournalEntryItems/SentimentManager.vue -->
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 

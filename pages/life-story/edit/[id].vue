@@ -1,3 +1,4 @@
+<!-- pages/life-story/edit/[id].vue -->
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue';
 import { useLifeStories } from '~/composables/useLifeStories';
@@ -62,8 +63,8 @@ const saveLifeStory = async (data: Partial<LifeStoryFormData>, isDraft: boolean)
   if (!storyId.value) return false;
   
   const formattedData: Partial<Omit<LifeStoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>> = {
-    Title: data.title,
-    Content: data.content,
+    title: data.title,
+    content: data.content,
     eventTimestamp: data.eventDate,
     eventGranularity: data.granularity,
     eventEndDate: data.endDate || null,
@@ -101,8 +102,8 @@ watch(pending, (isPending) => {
     } else {
       // Initialize the autosave with the loaded data
       autosave.setOriginalData({
-        title: currentStory.value.Title,
-        content: currentStory.value.Content,
+        title: currentStory.value.title,
+        content: currentStory.value.content,
         eventDate: currentStory.value.eventTimestamp,
         granularity: currentStory.value.eventGranularity,
         endDate: currentStory.value.eventEndDate,
@@ -131,8 +132,8 @@ const handleSubmit = async (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'cr
   
   try {
     const success = await autosave.saveData({
-      title: formData.Title,
-      content: formData.Content,
+      title: formData.title,
+      content: formData.content,
       eventDate: formData.eventTimestamp,
       granularity: formData.eventGranularity,
       endDate: formData.eventEndDate,
@@ -159,8 +160,8 @@ const handleSubmit = async (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'cr
 // Handle form updates for autosave
 const handleFormUpdate = (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
   autosave.updateFormData({
-    title: formData.Title,
-    content: formData.Content,
+    title: formData.title,
+    content: formData.content,
     eventDate: formData.eventTimestamp,
     granularity: formData.eventGranularity,
     endDate: formData.eventEndDate,

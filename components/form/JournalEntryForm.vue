@@ -1,3 +1,4 @@
+<!-- components/form/JournalEntryForm.vue -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useEditor } from '@tiptap/vue-3';

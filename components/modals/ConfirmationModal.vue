@@ -1,3 +1,4 @@
+<!-- components/modals/ConfirmationModal.vue -->
 <script setup lang="ts">
 import { useModalSystem } from '~/composables/useModalSystem';
 import CancelButton from '~/components/buttons/CancelButton.vue';

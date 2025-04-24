@@ -1,3 +1,4 @@
+// composables/useLifeStories.ts
 import { collection, query, addDoc, updateDoc, doc, orderBy, Timestamp, deleteDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import { ref, computed } from 'vue';
@@ -64,8 +65,8 @@ export const useLifeStories = () => {
         userId: storyDoc.userId,
         createdAt: storyDoc.createdAt,
         updatedAt: storyDoc.updatedAt,
-        Title: decrypt(storyDoc.Title),
-        Content: decrypt(storyDoc.Content),
+        title: decrypt(storyDoc.title),
+        content: decrypt(storyDoc.content),
         eventTimestamp: storyDoc.eventTimestamp,
         eventGranularity: decrypt(storyDoc.eventGranularity) as LifeStoryGranularity,
         eventEndDate: storyDoc.eventEndDate || null,
@@ -98,8 +99,8 @@ export const useLifeStories = () => {
         userId: userId.value,
         createdAt: now,
         updatedAt: now,
-        Title: encrypt(data.Title),
-        Content: encrypt(data.Content),
+        title: encrypt(data.title),
+        content: encrypt(data.content),
         eventTimestamp: data.eventTimestamp,
         eventGranularity: encrypt(data.eventGranularity),
         isDraft: data.isDraft || false
@@ -168,12 +169,12 @@ export const useLifeStories = () => {
       };
 
       // Only encrypt and update fields that are included in the updates
-      if (updates.Title !== undefined) {
-        updateData.Title = encrypt(updates.Title);
+      if (updates.title !== undefined) {
+        updateData.title = encrypt(updates.title);
       }
 
-      if (updates.Content !== undefined) {
-        updateData.Content = encrypt(updates.Content);
+      if (updates.content !== undefined) {
+        updateData.content = encrypt(updates.content);
       }
 
       if (updates.eventTimestamp !== undefined) {

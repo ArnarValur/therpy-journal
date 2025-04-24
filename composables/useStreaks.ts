@@ -1,3 +1,4 @@
+// composables/useStreaks.ts
 import { ref, computed, watch } from 'vue';
 import { useJournalEntry } from './useJournalEntry';
 

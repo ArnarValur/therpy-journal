@@ -1,3 +1,4 @@
+<!-- components/buttons/FeedbackButton.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
 import FeedbackModal from '~/components/modals/FeedbackModal.vue';

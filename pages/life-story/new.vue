@@ -1,3 +1,4 @@
+<!-- pages/life-story/new.vue -->
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
 import { useLifeStories } from '~/composables/useLifeStories';
@@ -41,8 +42,8 @@ const saveLifeStory = async (data: Partial<LifeStoryFormData>, isDraft = false):
   if (!authStore.user) return null;
   
   const formattedData: Partial<Omit<LifeStoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>> = {
-    Title: data.title,
-    Content: data.content,
+    title: data.title,
+    content: data.content,
     eventTimestamp: data.eventDate,
     eventGranularity: data.granularity,
     eventEndDate: data.endDate || null,
@@ -106,8 +107,8 @@ const handleSubmit = async (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'cr
   
   try {
     const success = await autosave.saveData({
-      title: formData.Title,
-      content: formData.Content,
+      title: formData.title,
+      content: formData.content,
       eventDate: formData.eventTimestamp,
       granularity: formData.eventGranularity,
       endDate: formData.eventEndDate,
@@ -139,8 +140,8 @@ const handleSubmit = async (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'cr
 // Handle form updates for autosave
 const handleFormUpdate = (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
   autosave.updateFormData({
-    title: formData.Title,
-    content: formData.Content,
+    title: formData.title,
+    content: formData.content,
     eventDate: formData.eventTimestamp,
     granularity: formData.eventGranularity,
     endDate: formData.eventEndDate,
