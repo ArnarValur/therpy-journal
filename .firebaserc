@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "therapy-journal-18762"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }
