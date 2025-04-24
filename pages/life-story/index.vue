@@ -1,6 +1,6 @@
 <!-- pages/life-story/index.vue -->
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, watch } from 'vue';
 import { useLifeStories } from '~/composables/useLifeStories';
 import { useAuthStore } from '~/stores/auth';
 import { useActionHandler } from '~/composables/useActionHandler';
@@ -31,6 +31,25 @@ const router = useRouter();
 // Filter state
 const granularityFilter = ref('all');
 const yearFilter = ref<number | null>(null);
+
+// New filter states for different granularities
+const dateFilter = ref<string | null>(null);
+const monthFilter = ref<string | null>(null);
+const startYearFilter = ref<number | null>(null);
+const endYearFilter = ref<number | null>(null);
+const eraFilter = ref<string | null>(null);
+
+// Compute available eras from life stories
+const availableEras = computed(() => {
+  const eras = new Set<string>();
+  lifeStories.value.forEach(entry => {
+    if (entry.eventGranularity === 'era' && entry.eventLabel) {
+      eras.add(entry.eventLabel);
+    }
+  });
+  return Array.from(eras);
+});
+
 const yearOptions = computed(() => {
   // Use the year range computed from the life stories
   if (!yearRange.value) return [];
@@ -70,6 +89,16 @@ const yearRange = computed(() => {
     min: Math.min(...yearsArray),
     max: Math.max(...yearsArray)
   };
+});
+
+// Reset all filters when granularity changes
+watch(granularityFilter, () => {
+  yearFilter.value = null;
+  dateFilter.value = null;
+  monthFilter.value = null;
+  startYearFilter.value = null;
+  endYearFilter.value = null;
+  eraFilter.value = null;
 });
 
 // Delete story state
@@ -159,31 +188,178 @@ const formatEventDate = (entry: Partial<LifeStoryEntry>): string => {
   }
 };
 
+// Helper to parse date string to Date object
+const getDateFromString = (dateString: string | null): Date | null => {
+  if (!dateString) return null;
+  return new Date(dateString);
+};
+
+// Helper to extract year and month from date string (format: YYYY-MM)
+const getYearMonthFromString = (monthString: string | null): { year: number, month: number } | null => {
+  if (!monthString) return null;
+  const [year, month] = monthString.split('-').map(Number);
+  if (isNaN(year) || isNaN(month)) return null;
+  return { year, month: month - 1 }; // Month is 0-indexed in JavaScript Date
+};
+
 // Filtered entries based on selected filters
 const filteredEntries = computed(() => {
   if (!lifeStories.value.length) return [];
   
   let filtered = lifeStories.value;
   
-  // Filter by granularity
-  if (granularityFilter.value !== 'all') {
-    filtered = filtered.filter(entry => entry.eventGranularity === granularityFilter.value);
+  // If "all" is selected, we don't filter by granularity type
+  // Instead, we only filter based on the active filter controls
+  switch (granularityFilter.value) {
+    case 'all':
+      // No filtering by granularity
+      break;
+      
+    case 'day': 
+      if (dateFilter.value) {
+        const selectedDate = getDateFromString(dateFilter.value);
+        if (selectedDate) {
+          // Set time to beginning of day for comparison
+          selectedDate.setHours(0, 0, 0, 0);
+          
+          filtered = filtered.filter(entry => {
+            // Check if the entry's date matches the selected date
+            const startDate = ensureDate(entry.eventTimestamp);
+            if (!startDate) return false;
+            
+            // For single date entries, check exact match
+            if (!entry.eventEndDate) {
+              return startDate.getFullYear() === selectedDate.getFullYear() &&
+                    startDate.getMonth() === selectedDate.getMonth() &&
+                    startDate.getDate() === selectedDate.getDate();
+            }
+            
+            // For range entries, check if selected date falls within the range
+            const endDate = ensureDate(entry.eventEndDate);
+            if (!endDate) return false;
+            
+            // Make copies to avoid modifying original date references
+            const startCopy = new Date(startDate);
+            const endCopy = new Date(endDate);
+            
+            // Set times to beginning and end of day for proper comparison
+            startCopy.setHours(0, 0, 0, 0);
+            endCopy.setHours(23, 59, 59, 999);
+            
+            return selectedDate >= startCopy && selectedDate <= endCopy;
+          });
+        }
+      }
+      break;
+      
+    case 'month':
+      if (monthFilter.value) {
+        const selectedYearMonth = getYearMonthFromString(monthFilter.value);
+        if (selectedYearMonth) {
+          filtered = filtered.filter(entry => {
+            const startDate = ensureDate(entry.eventTimestamp);
+            if (!startDate) return false;
+            
+            // Create a date object for the first day of the selected month
+            const selectedMonthStart = new Date(selectedYearMonth.year, selectedYearMonth.month, 1);
+            
+            // Create a date object for the first day of the next month
+            const selectedMonthEnd = new Date(selectedYearMonth.year, selectedYearMonth.month + 1, 0);
+            selectedMonthStart.setHours(0, 0, 0, 0);
+            selectedMonthEnd.setHours(23, 59, 59, 999);
+            
+            // For single date entries
+            if (!entry.eventEndDate) {
+              return startDate.getFullYear() === selectedYearMonth.year &&
+                    startDate.getMonth() === selectedYearMonth.month;
+            }
+            
+            // For range entries, check if any part of the range overlaps with the selected month
+            const endDate = ensureDate(entry.eventEndDate);
+            if (!endDate) return false;
+            
+            // Check if the range overlaps with the selected month
+            return (
+              // Either the entry starts within the month
+              (startDate >= selectedMonthStart && startDate <= selectedMonthEnd) ||
+              // Or the entry ends within the month
+              (endDate >= selectedMonthStart && endDate <= selectedMonthEnd) ||
+              // Or the entry spans over the month
+              (startDate <= selectedMonthStart && endDate >= selectedMonthEnd)
+            );
+          });
+        }
+      }
+      break;
+      
+    case 'year':
+      if (yearFilter.value !== null) {
+        const selectedYear = yearFilter.value;
+        filtered = filtered.filter(entry => {
+          if (!entry.eventTimestamp) return false;
+          
+          const startDate = ensureDate(entry.eventTimestamp);
+          if (!startDate) return false;
+          
+          // For single date entries
+          if (!entry.eventEndDate) {
+            return startDate.getFullYear() === selectedYear;
+          }
+          
+          // For range entries, check if the selectedYear falls within the range
+          const endDate = ensureDate(entry.eventEndDate);
+          if (!endDate) return false;
+          
+          return (
+            // Either the start year is our year
+            startDate.getFullYear() === selectedYear ||
+            // Or the end year is our year
+            endDate.getFullYear() === selectedYear ||
+            // Or our year is between start and end
+            (startDate.getFullYear() < selectedYear && endDate.getFullYear() > selectedYear)
+          );
+        });
+      }
+      break;
+      
+    case 'range':
+      if (startYearFilter.value !== null || endYearFilter.value !== null) {
+        filtered = filtered.filter(entry => {
+          if (!entry.eventTimestamp) return false;
+          
+          const entryStartDate = ensureDate(entry.eventTimestamp);
+          const entryEndDate = entry.eventEndDate ? ensureDate(entry.eventEndDate) : entryStartDate;
+          
+          if (!entryStartDate || !entryEndDate) return false;
+          
+          const entryStartYear = entryStartDate.getFullYear();
+          const entryEndYear = entryEndDate.getFullYear();
+          
+          // If only start year is provided
+          if (startYearFilter.value !== null && endYearFilter.value === null) {
+            return entryEndYear >= startYearFilter.value;
+          }
+          
+          // If only end year is provided
+          if (startYearFilter.value === null && endYearFilter.value !== null) {
+            return entryStartYear <= endYearFilter.value;
+          }
+          
+          // If both are provided, check for any overlap between the ranges
+          return (
+            // The entry's range overlaps with or is contained in our filter range
+            (entryStartYear <= endYearFilter.value! && entryEndYear >= startYearFilter.value!)
+          );
+        });
+      }
+      break;
+      
+    case 'era':
+      if (eraFilter.value) {
+        filtered = filtered.filter(entry => entry.eventLabel === eraFilter.value);
+      }
+      break;
   }
-  
-  // Filter by year
-  if (yearFilter.value !== null) { // Check if a year is selected
-  const selectedYear = yearFilter.value;
-
-  filtered = filtered.filter(entry => {
-    // Ensure there's a start timestamp
-    if (!entry.eventTimestamp) return false;
-
-    const date = ensureDate(entry.eventTimestamp); // Use your existing helper
-
-    // Simply check if the entry's year matches the selected year
-    return date ? date.getFullYear() === selectedYear : false;
-  });
-}
 
   return filtered;
 });
@@ -276,18 +452,87 @@ const handleEditStory = (event: Event, id: string) => {
           </div>
         </div>
         
-        <!-- TODO: only show years that have entries -->
-        <div class="w-full md:w-48">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Year
-          </label>
-          <select 
-            v-model="yearFilter"
-            class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 px-3 text-sm"
-          >
-            <option :value="null">All Years</option>
-            <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
-          </select>
+        <!-- Dynamic filter inputs based on selected granularity -->
+        <div v-if="granularityFilter !== 'all'" class="w-full md:w-auto">
+          <!-- Day filter - date picker -->
+          <div v-if="granularityFilter === 'day'" class="w-full md:w-48">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select Date
+            </label>
+            <input 
+              v-model="dateFilter"
+              type="date" 
+              class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 px-3 text-sm"
+            >
+          </div>
+          
+          <!-- Month filter - month picker -->
+          <div v-else-if="granularityFilter === 'month'" class="w-full md:w-48">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select Month
+            </label>
+            <input 
+              v-model="monthFilter"
+              type="month" 
+              class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 px-3 text-sm"
+            >
+          </div>
+          
+          <!-- Year filter - year dropdown -->
+          <div v-else-if="granularityFilter === 'year'" class="w-full md:w-48">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select Year
+            </label>
+            <select 
+              v-model="yearFilter"
+              class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 px-3 text-sm"
+            >
+              <option :value="null">All Years</option>
+              <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+            </select>
+          </div>
+          
+          <!-- Range filter - start and end year -->
+          <div v-else-if="granularityFilter === 'range'" class="w-full flex flex-col md:flex-row gap-2">
+            <div class="w-full md:w-32">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                From Year
+              </label>
+              <select 
+                v-model="startYearFilter"
+                class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 px-3 text-sm"
+              >
+                <option :value="null">Any</option>
+                <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+              </select>
+            </div>
+            <div class="w-full md:w-32">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                To Year
+              </label>
+              <select 
+                v-model="endYearFilter"
+                class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 px-3 text-sm"
+              >
+                <option :value="null">Any</option>
+                <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Era filter - era dropdown -->
+          <div v-else-if="granularityFilter === 'era'" class="w-full md:w-48">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Select Era
+            </label>
+            <select 
+              v-model="eraFilter"
+              class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 px-3 text-sm"
+            >
+              <option :value="null">All Eras</option>
+              <option v-for="era in availableEras" :key="era" :value="era">{{ era }}</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -399,7 +644,7 @@ const handleEditStory = (event: Event, id: string) => {
       <p class="text-gray-600 dark:text-gray-300">No life stories match your filters</p>
       <button 
         class="mt-4 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
-        @click="granularityFilter = 'all'; yearFilter = null"
+        @click="granularityFilter = 'all'; yearFilter = null; dateFilter = null; monthFilter = null; startYearFilter = null; endYearFilter = null; eraFilter = null;"
       >
         Clear Filters
       </button>
