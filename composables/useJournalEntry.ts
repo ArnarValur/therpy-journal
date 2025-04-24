@@ -216,12 +216,10 @@ export const useJournalEntry = () => {
     const currentUserId = auth.user?.id;
 
     if (!currentUserId) {
-      console.log('No user ID found');
       error.value = new Error('You must be authenticated to update a journal entry');
       return false;
     }
     if (!id) {
-      console.log('No ID found');
       error.value = new Error('You must be authenticated to update a journal entry');
       return false;
     }
@@ -256,8 +254,6 @@ export const useJournalEntry = () => {
       // Explicitly handle isDraft field
       if (updates.isDraft !== undefined) {
         updateData.isDraft = updates.isDraft;
-        // TODO: Do not draft the entry if it has been initially saved, only draft if it is being updated
-        console.log('Setting isDraft to:', updates.isDraft);
       }
       
       await updateDoc(docRef, updateData);

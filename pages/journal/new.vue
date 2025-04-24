@@ -49,7 +49,6 @@ const handleSubmit = async (data: {
   sentiments: Record<string, number>;
   isDraft: boolean;
 }) => {
-  console.log('Saving entry...');
   isManualSaving.value = true;
   isLoading.value = true;
   error.value = null;
@@ -68,11 +67,9 @@ const handleSubmit = async (data: {
     const currentDraftId = draftId.value;
 
     if (currentDraftId) {
-      console.log(`Updating existing draft (ID: ${currentDraftId}) as final entry.`);
       // Update the existing entry and mark it as not a draft
       success = await updateEntry(currentDraftId, entry);
     } else {
-      console.log('Creating new entry...');
       // Create new entry
       const result = await createEntry(entry);
       if (result?.id) {
@@ -122,7 +119,6 @@ const handleFormUpdate = async (data: {
 
   if (!data.title && !data.content) return;
   
-  console.log('Autosaving...');
   isAutosaving.value = true;
   
   try {
@@ -135,11 +131,9 @@ const handleFormUpdate = async (data: {
     };
 
     if (currentEntryId) {
-      console.log('Updating existing draft...');
       // Update existing draft
       await updateEntry(currentEntryId, entry);
     } else {
-      console.log('Creating new draft...');
       // Create new draft
       const result = await createEntry(entry);
       if (result?.id) {
@@ -158,10 +152,7 @@ const handleFormUpdate = async (data: {
 // Function to ensure entry is saved as draft when navigating away
 const saveAsDraft = async () => {
   // Skip if we never started writing anything
-  if ((!formData.value.title && !formData.value.content) || isManualSaving.value) return;
-  
-  console.log('Saving as draft before leaving...');
-  
+  if ((!formData.value.title && !formData.value.content) || isManualSaving.value) return;  
   try {
     const entry = {
       title: formData.value.title || 'Untitled Draft',
@@ -194,8 +185,6 @@ const handleCancel = async () => {
 
 // Add cleanup to ensure drafts are saved when navigating away
 tryOnBeforeUnmount(async () => {
-  console.log('New Entry Page: Running cleanup before unmount...');
-
   // Save as draft if needed
   await saveAsDraft();
 });
