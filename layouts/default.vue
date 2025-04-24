@@ -182,6 +182,19 @@ const closeFeedbackModal = () => {
                   <span :class="{ 'md:hidden': !sidebarOpen }">Journal</span>
                 </NuxtLink>
               </li>
+              <!-- Life Story -->
+              <li>
+                <NuxtLink 
+                  to="/life-story" 
+                  class="nav-link flex items-center px-4 py-2"
+                  :class="{ 'md:justify-center': !sidebarOpen }"
+                  active-class="nav-link-active"
+                  @click="handleNavigation"
+                >
+                  <i class="ri-history-line text-lg" :class="['md:mr-0', (sidebarOpen || isMobileMenuOpen) ? 'mr-3' : '']" />
+                  <span :class="{ 'md:hidden': !sidebarOpen }">Life Story</span>
+                </NuxtLink>
+              </li>
               <!-- Therapist -->
               <li v-if="featureFlagsStore.showTherapistLink">
                 <NuxtLink 

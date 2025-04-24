@@ -1,3 +1,4 @@
+// middleware/email-verified.ts
 import { useAuthStore } from '~/stores/auth';
 
 export default defineNuxtRouteMiddleware(async (to) => {

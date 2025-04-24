@@ -21,7 +21,7 @@ export function useEncryption() {
   /**
    * Encrypts text data using AES encryption
    * @param data - Plain text data to encrypt
-   * @returns Encrypted string
+   * @returns  string
    */
   const encrypt = (data: string): string => {
     try {
@@ -38,17 +38,17 @@ export function useEncryption() {
   };
 
   /**
-   * Decrypts encrypted data back to plain text
-   * @param encryptedData - Encrypted string
+   * Decrypts  data back to plain text
+   * @param Data -  string
    * @returns Decrypted plain text
    */
-  const decrypt = (encryptedData: string): string => {
+  const decrypt = (Data: string): string => {
     try {
-      if (!encryptedData) return '';
+      if (!Data) return '';
       
       const key = getUserEncryptionKey();
       // Decrypt the data
-      const bytes = CryptoJS.AES.decrypt(encryptedData, key);
+      const bytes = CryptoJS.AES.decrypt(Data, key);
       
       // Try to convert to UTF-8 string, if it fails, the data might be corrupted
       try {

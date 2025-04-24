@@ -1,15 +1,19 @@
 <!-- pages/journal/index.vue -->
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
+import { useActionHandler } from '~/composables/useActionHandler';
+import { useModalSystem } from '~/composables/useModalSystem';
+import { useFeatureFlagsStore } from '~/stores/featureFlags';
+
+// Components 
 import EntryButton from '~/components/buttons/EntryButton.vue';
 import FilterButton from '~/components/buttons/FilterButton.vue';
 import OpenButton from '~/components/buttons/OpenButton.vue';
 import EditButton from '~/components/buttons/EditButton.vue';
 import DeleteButton from '~/components/buttons/DeleteButton.vue';
 import ConfirmationModal from '~/components/modals/ConfirmationModal.vue';
-import { useActionHandler } from '~/composables/useActionHandler';
-import { useModalSystem } from '~/composables/useModalSystem';
-import { useFeatureFlagsStore } from '~/stores/featureFlags';
+
+// Use the modal system to get state and actions
 useModalSystem();
 
 // Feature flags store
@@ -219,9 +223,10 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
       <div>
         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">My Journals</h1>
+        <p class="text-gray-600 dark:text-gray-300 mt-1">Your daily thoughts and reflections</p>
       </div>
       <EntryButton 
-        class="text-white "
+        class="text-white"
         @click="handleNewEntry"
       >
         <i class="ri-add-line mr-2" />
@@ -230,7 +235,7 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
     </div>
       
     <!-- Filter options -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 border border-gray-100 dark:border-gray-700">
       <div class="flex flex-col md:flex-row gap-4 items-end">
         <div class="flex-grow">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -332,7 +337,7 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
     </div>
 
     <!-- No matching entries message -->
-    <div v-else-if="!isLoading && entries.length > 0 && filteredEntries.length === 0" class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div v-else-if="!isLoading && entries.length > 0 && filteredEntries.length === 0" class="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700">
       <i class="ri-filter-off-line text-5xl text-gray-400 mb-4" />
       <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">No entries match your filter</h3>
       <p class="text-gray-500 dark:text-gray-400 mt-2">Try changing your date filter to see more entries</p>
@@ -343,10 +348,10 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
         <div 
           v-for="entry in filteredEntries" 
           :key="entry.id" 
-          class="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden"
+          class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700 hover:shadow-md transition-shadow overflow-hidden"
         >
         <!-- Journal Card -->
-        <div class="p-5">
+        <div class="p-5 sm:p-6">
           <div class="flex justify-between items-start ml-6">
             <div class="flex items-start space-x-3">
               <!-- Sentiment circle -->
@@ -371,6 +376,7 @@ const getSentimentClass = (entry: { sentiments?: Record<string, number> }) => {
                   </span>
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
+                  <i class="ri-calendar-line mr-2 text-gray-400 dark:text-gray-500" />
                   {{ formatDate(entry.createdAt instanceof Date ? entry.createdAt : new Date()) }}
                 </div>
               </div>

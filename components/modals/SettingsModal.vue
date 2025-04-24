@@ -1,4 +1,4 @@
-<!-- components/SettingsModal.vue -->
+<!-- components/modals/SettingsModal.vue -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '~/stores/auth';

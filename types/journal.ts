@@ -21,7 +21,7 @@ export type JournalEntry = {
   createdAt: Date;
   updatedAt: Date;
   userId: string;
-  isEncrypted: boolean;
+  is: boolean;
   sentiment?: SentimentType;
   sentimentSliders?: SentimentSlider[];
   tags?: JournalTag[];
