@@ -1,3 +1,4 @@
+<!-- pages/feedback.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useFeedback } from '~/composables/useFeedback';

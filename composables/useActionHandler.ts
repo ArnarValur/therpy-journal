@@ -49,7 +49,8 @@ export function useActionHandler<TInput = void, TResult = unknown>(options: Acti
     try {
       // ... (rest of the try block: actionFn, onSuccess, successMessage) ...
       const result = await options.actionFn(data);
-      if (options.successMessage) console.log('Success Toast:', options.successMessage); // Placeholder
+      if (options.successMessage)
+        
       if (options.onSuccess) await options.onSuccess(result, data);
 
     } catch (err: unknown) {

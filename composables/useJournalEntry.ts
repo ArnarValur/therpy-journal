@@ -22,7 +22,7 @@ export interface JournalEntry {
 // Type for Firebase update data
 type FirebaseDocData = {
   [field: string]: string | number | boolean | Date | string[] | Record<string, number> | null | {
-    data: string; // Add this to allow encrypted sentiment data
+    data: string; // Add this to allow  sentiment data
   };
 };
 
@@ -67,7 +67,7 @@ export const useJournalEntry = () => {
 
        return {
         // Spread potentially non-existent fields carefully if needed based on Firestore structure
-        // Assuming all fields exist but might be encrypted/need type conversion
+        // Assuming all fields exist but might be /need type conversion
         id: entryDoc.id, // VueFire adds the ID
         title: decrypt(entryDoc.title),
         content: decrypt(entryDoc.content),
@@ -170,7 +170,7 @@ export const useJournalEntry = () => {
         return null;
       }
       
-      // Create base entry with non-encrypted fields
+      // Create base entry with non- fields
       const decryptedData: JournalEntry = {
         id,
         title: decrypt(entryData.value.title),
@@ -216,12 +216,10 @@ export const useJournalEntry = () => {
     const currentUserId = auth.user?.id;
 
     if (!currentUserId) {
-      console.log('No user ID found');
       error.value = new Error('You must be authenticated to update a journal entry');
       return false;
     }
     if (!id) {
-      console.log('No ID found');
       error.value = new Error('You must be authenticated to update a journal entry');
       return false;
     }
@@ -229,11 +227,7 @@ export const useJournalEntry = () => {
     isLoading.value = true;
     error.value = null;
     
-    console.log(`updateEntry called for User ID: ${currentUserId}, Entry ID: ${id}`);
-    console.log('updateEntry updates:', JSON.stringify(updates));
-    
     try {
-      console.log('updateEntry called with updates:', JSON.stringify(updates));
       const docRef = doc(firestore as Firestore, 'users', currentUserId, 'journalEntries', id);
       const updateData: FirebaseDocData = {
         updatedAt: new Date()
@@ -260,7 +254,6 @@ export const useJournalEntry = () => {
       // Explicitly handle isDraft field
       if (updates.isDraft !== undefined) {
         updateData.isDraft = updates.isDraft;
-        console.log('Setting isDraft to:', updates.isDraft);
       }
       
       await updateDoc(docRef, updateData);

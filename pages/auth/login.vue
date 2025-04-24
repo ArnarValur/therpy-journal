@@ -60,8 +60,8 @@ const onEmailLogin = async () => {
     startLoading('login', 'Logging in...');
     await authStore.login(email.value, password.value);
     
-    // Navigate to dashboard or redirected path
-    await router.push('/');
+    // Navigate to dashboard instead of home
+    await router.push('/dashboard');
   } catch (error) {
     logError(error, 'auth');
   } finally {
@@ -76,8 +76,8 @@ const onGoogleLogin = async () => {
     startLoading('google-login', 'Signing in with Google...');
     await authStore.loginWithGoogle();
     
-    // Navigate to dashboard or redirected path
-    await router.push('/');
+    // Navigate to dashboard instead of home
+    await router.push('/dashboard');
   } catch (error) {
     // Only show error if it's not a user cancellation
     if (error && typeof error === 'object' && 'code' in error) {

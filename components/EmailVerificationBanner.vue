@@ -1,3 +1,4 @@
+<!-- components/EmailVerificationBanner.vue -->
 <template>
   <div v-if="showBanner" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
     <div class="flex items-center">
