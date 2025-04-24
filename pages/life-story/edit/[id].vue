@@ -56,6 +56,7 @@ interface LifeStoryFormData {
   label?: string | null;
   location?: LifeStoryLocation | null;
   customFields?: CustomField[] | null;
+  isDraft?: boolean;
 }
 
 // Create the save function for the autosave composable
@@ -139,7 +140,8 @@ const handleSubmit = async (formData: Omit<LifeStoryEntry, 'id' | 'userId' | 'cr
       endDate: formData.eventEndDate,
       label: formData.eventLabel,
       location: formData.location,
-      customFields: formData.customFields
+      customFields: formData.customFields,
+      isDraft: false
     }, false);
     
     if (success) {

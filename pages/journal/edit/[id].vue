@@ -65,6 +65,8 @@ const autosave = useAutosave<JournalEntryData>({
 // For backward compatibility
 const isLoading = computed(() => apiLoading.value);
 const error = computed(() => apiError.value || autosave.error.value);
+const submitting = ref(false);
+const submissionError = ref<string | null>(null);
 
 // Check if user is authenticated and load journal entry
 onMounted(async () => {
@@ -120,15 +122,28 @@ const handleSubmit = async (data: {
   sentiments: Record<string, number>;
   isDraft: boolean;
 }) => {
+  if (!entryId.value) return;
+  
+  submitting.value = true;
+  submissionError.value = null;
+  
   try {
-    const success = await autosave.saveData(data, false);
+    // Explicitly pass isDraft: false to ensure it's not saved as a draft
+    const success = await autosave.saveData({
+      ...data,
+      isDraft: false
+    }, false);
     
     if (success) {
       await router.push($routes.JOURNAL.HOME);
+    } else {
+      submissionError.value = 'Failed to update journal entry';
     }
   } catch (err) {
-    console.error('Error saving journal entry:', err);
+    console.error('Error updating journal entry:', err);
+    submissionError.value = 'Failed to update journal entry';
   } finally {
+    submitting.value = false;
     autosave.finishSaving();
   }
 };
@@ -180,14 +195,14 @@ onBeforeUnmount(async () => {
     </div>
 
     <!-- Error message -->
-    <div v-if="error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/30 dark:border-red-800">
+    <div v-if="error || submissionError" class="mb-4 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/30 dark:border-red-800">
       <div class="flex">
         <div class="flex-shrink-0">
           <i class="ri-error-warning-line text-red-400 dark:text-red-300" />
         </div>
         <div class="ml-3">
           <h3 class="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
-          <div class="mt-2 text-sm text-red-700 dark:text-red-300">{{ error }}</div>
+          <div class="mt-2 text-sm text-red-700 dark:text-red-300">{{ error || submissionError }}</div>
         </div>
       </div>
     </div>
@@ -196,7 +211,7 @@ onBeforeUnmount(async () => {
     <JournalEntryForm
       v-if="!loadingEntry"
       :initial-data="initialData"
-      :is-submitting="isLoading"
+      :is-submitting="isLoading || submitting"
       :is-autosaving="autosave.isAutosaving.value"
       :last-autosave-time="autosave.lastAutosaveTime.value"
       @submit="handleSubmit"

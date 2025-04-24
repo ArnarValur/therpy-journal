@@ -86,7 +86,11 @@ const handleSubmit = async (data: {
   error.value = null;
 
   try {
-    const success = await autosave.saveData(data, false);
+    // Explicitly pass isDraft: false to ensure it's not saved as a draft
+    const success = await autosave.saveData({
+      ...data,
+      isDraft: false
+    }, false);
     
     if (success) {
       await router.push($routes.JOURNAL.HOME);
