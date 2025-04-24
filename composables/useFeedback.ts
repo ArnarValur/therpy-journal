@@ -1,3 +1,4 @@
+// composables/useFeedback.ts
 import { ref, computed } from 'vue';
 import { 
   collection, 
@@ -8,7 +9,8 @@ import {
   updateDoc, 
   doc, 
   where, 
-  Timestamp 
+  Timestamp,
+  deleteDoc
 } from 'firebase/firestore';
 import { useFirestore } from 'vuefire';
 import { useAuthStore } from '~/stores/auth';
@@ -170,6 +172,32 @@ export function useFeedback() {
     }
   };
 
+  /**
+   * Delete feedback 
+   */
+  const deleteFeedback = async (feedbackId: string) => {
+    if (!isAdmin.value) {
+      error.value = 'Unauthorized: Admin access required';
+      return false;
+    }
+
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const feedbackRef = doc(db, 'feedbacks', feedbackId);
+      await deleteDoc(feedbackRef);
+      
+      return true;
+    } catch (err) {
+      console.error('Error deleting feedback:', err);
+      error.value = 'Failed to delete feedback';
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   return {
     isLoading,
     error,
@@ -177,6 +205,7 @@ export function useFeedback() {
     getAllFeedback,
     submitFeedback,
     markAsRead,
-    getUnreadCount
+    getUnreadCount,
+    deleteFeedback
   };
 } 

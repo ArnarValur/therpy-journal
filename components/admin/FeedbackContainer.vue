@@ -1,8 +1,9 @@
+<!-- components/admin/FeedbackContainer.vue -->
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useFeedback, type Feedback } from '~/composables/useFeedback';
 
-const { getAllFeedback, markAsRead, isLoading, error } = useFeedback();
+const { getAllFeedback, markAsRead, deleteFeedback, isLoading, error } = useFeedback();
 const feedbackList = ref<Feedback[]>([]);
 const unreadCount = ref(0);
 
@@ -41,6 +42,16 @@ const handleMarkAsRead = async (id: string) => {
       feedbackList.value[index].isRead = true;
       unreadCount.value--;
     }
+  }
+};
+
+// Delete feedback
+const handleDeleteFeedback = async (id: string) => {
+  const success = await deleteFeedback(id);
+  if (success) {
+    feedbackList.value = feedbackList.value.filter(f => f.id !== id);
+    // Update unread count if the deleted feedback was unread
+    unreadCount.value = feedbackList.value.filter(f => !f.isRead).length;
   }
 };
 </script>
@@ -98,6 +109,12 @@ const handleMarkAsRead = async (id: string) => {
             @click="handleMarkAsRead(item.id!)"
           >
             Mark as read
+          </button>
+          <button 
+            class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors text-xs"
+            @click="handleDeleteFeedback(item.id!)"
+          >
+            Delete
           </button>
         </div>
       </div>

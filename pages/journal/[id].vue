@@ -149,7 +149,7 @@ const requestDeleteEntry = (event: Event, id: string) => {
     </div>
 
     <!-- Journal entry content -->
-    <div v-if="!isLoading && entry" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <div v-if="!isLoading && entry" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700">
       <div class="p-6">
         <!-- Header -->
         <div class="flex justify-between items-start mb-6">
